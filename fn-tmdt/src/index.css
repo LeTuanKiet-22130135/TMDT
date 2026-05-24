@@ -26,19 +26,30 @@
     --color-border: var(--border);
     --color-destructive: var(--destructive);
     --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
+    --color-accent: #F65C88;
     --color-muted-foreground: var(--muted-foreground);
     --color-muted: var(--muted);
     --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
+    --color-secondary: #FFAE98;
     --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
+    --color-primary: #FFC9D2;
     --color-popover-foreground: var(--popover-foreground);
     --color-popover: var(--popover);
     --color-card-foreground: var(--card-foreground);
     --color-card: var(--card);
-    --color-foreground: var(--foreground);
-    --color-background: var(--background);
+    --color-foreground: #040316;
+    --color-background: #FBFBFE;
+    --color-surface: #FBFBFE;
+    --color-on-surface: #040316;
+    --color-on-surface-variant: #474747;
+    --color-surface-container-low: #f6f2ff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-high: #e9e5ff;
+    --color-surface-container-highest: #e3dffd;
+    --color-surface-bright: #fcf8ff;
+    --color-tertiary: #F65C88;
+    --color-tertiary-container: #db2e50;
+    --color-secondary-container: #ffc7c0;
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -46,6 +57,13 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
+    --animate-gradient: gradient 3s ease infinite;
+
+    @keyframes gradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
 }
 
 :root {
