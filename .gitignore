@@ -1,2 +1,3 @@
 **/test_data
 **/.cache
+__pycache__/
