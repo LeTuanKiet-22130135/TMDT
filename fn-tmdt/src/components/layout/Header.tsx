@@ -1,14 +1,19 @@
 import React from 'react';
 import { Search, Bell } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 
 export const Header: React.FC = () => {
+  const location = useLocation();
+  const isHome = location.pathname === '/';
+  const isCustom = location.pathname === '/custom-requests';
+
   return (
     <header className="w-full sticky top-0 z-50 bg-surface shadow-sm flex items-center justify-between px-8 py-4 font-headline antialiased">
       <div className="flex items-center gap-8">
-        <a href="/" className="hidden md:flex items-center gap-4">
+        <Link to="/" className="hidden md:flex items-center gap-4">
           <img src="/assets/img/logo.png" alt="Logo" className="w-12 h-12 img-pixelated" />
           <span className="text-2xl font-bold tracking-tight text-on-surface">Atélier</span>
-        </a>
+        </Link>
 
         <div className="hidden md:flex items-center bg-surface-container-low px-4 py-2 rounded-full w-96">
           <Search className="text-on-surface-variant mr-2" size={20} />
@@ -20,8 +25,22 @@ export const Header: React.FC = () => {
         </div>
       </div>
       <nav className="hidden md:flex items-center gap-6">
-        <a className="text-on-surface-variant hover:text-tertiary transition-colors duration-200" href="#">Thư viện</a>
-        <a className="text-tertiary font-semibold border-b-2 border-tertiary transition-colors duration-200" href="#">Tạo mới</a>
+        <Link 
+          className={`transition-colors duration-200 ${
+            isHome ? 'text-tertiary font-semibold border-b-2 border-tertiary' : 'text-on-surface-variant hover:text-tertiary'
+          }`} 
+          to="/"
+        >
+          Thư viện
+        </Link>
+        <Link 
+          className={`transition-colors duration-200 ${
+            isCustom ? 'text-tertiary font-semibold border-b-2 border-tertiary' : 'text-on-surface-variant hover:text-tertiary'
+          }`} 
+          to="/custom-requests"
+        >
+          Tạo mới
+        </Link>
         <div className="flex items-center gap-4 ml-4">
           <button className="p-2 hover:bg-surface-bright rounded-full transition-colors duration-200">
             <Bell className="text-on-surface-variant" size={24} />
@@ -38,3 +57,4 @@ export const Header: React.FC = () => {
     </header>
   );
 };
+
