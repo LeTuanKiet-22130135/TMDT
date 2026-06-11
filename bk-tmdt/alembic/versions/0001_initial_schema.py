@@ -25,14 +25,6 @@ def upgrade() -> None:
     report_type_enum = postgresql.ENUM("STORE_VIOLATION", "CUSTOMER_VIOLATION", "PRODUCT_VIOLATION", name="report_type_enum")
     report_status_enum = postgresql.ENUM("PENDING", "REVIEWED", "RESOLVED", "DISMISSED", name="report_status_enum")
 
-    bind = op.get_bind()
-    role_enum.create(bind, checkfirst=True)
-    auth_provider_enum.create(bind, checkfirst=True)
-    order_status_enum.create(bind, checkfirst=True)
-    payment_method_enum.create(bind, checkfirst=True)
-    payment_status_enum.create(bind, checkfirst=True)
-    report_type_enum.create(bind, checkfirst=True)
-    report_status_enum.create(bind, checkfirst=True)
 
     op.create_table(
         "users",
