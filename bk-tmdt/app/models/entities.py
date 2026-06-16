@@ -96,6 +96,8 @@ class User(Base, TimestampMixin):
     reward_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=text("true"))
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
+    verification_otp: Mapped[Optional[str]] = mapped_column(String(6), nullable=True)
+    verification_otp_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     store: Mapped[Optional["Store"]] = relationship(back_populates="owner", uselist=False)
     cart: Mapped[Optional["ShoppingCart"]] = relationship(back_populates="user", uselist=False)

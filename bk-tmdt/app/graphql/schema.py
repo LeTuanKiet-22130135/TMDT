@@ -140,6 +140,11 @@ class Query:
     def store_products(self, info: Info, store_id: UUID) -> list[ProductType]:
         return [to_product_type(product) for product in list_products_by_store(_db(info), store_id)]
 
+from app.graphql.mutations import AuthMutation
 
-schema = strawberry.Schema(query=Query)
+@strawberry.type
+class Mutation(AuthMutation):
+    pass
+
+schema = strawberry.Schema(query=Query, mutation=Mutation)
 graphql_router = GraphQLRouter(schema, context_getter=get_graphql_context)

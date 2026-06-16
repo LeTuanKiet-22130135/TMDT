@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     reward_point_value_vnd: int = Field(default=1000, validation_alias="REWARD_POINT_VALUE_VND")
     webhook_secret: str = Field(default="change-me", validation_alias="WEBHOOK_SECRET")
 
+    # Mailtrap Settings
+    smtp_host: str = Field(default="sandbox.smtp.mailtrap.io", validation_alias="SMTP_HOST")
+    smtp_port: int = Field(default=2525, validation_alias="SMTP_PORT")
+    smtp_username: str = Field(default="", validation_alias="SMTP_USERNAME")
+    smtp_password: str = Field(default="", validation_alias="SMTP_PASSWORD")
+    smtp_from_email: str = Field(default="noreply@tmdt.com", validation_alias="SMTP_FROM_EMAIL")
 
 @lru_cache
 def get_settings() -> Settings:

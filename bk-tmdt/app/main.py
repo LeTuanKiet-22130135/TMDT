@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 
 if __package__ is None or __package__ == "":
@@ -21,6 +22,15 @@ from app.graphql import graphql_router
 
 
 app = FastAPI(title=settings.app_name)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(auth_router, prefix=f"{settings.api_v1_prefix}/auth", tags=["auth"])
 app.include_router(cart_router, prefix=f"{settings.api_v1_prefix}/cart", tags=["cart"])
 app.include_router(orders_router, prefix=f"{settings.api_v1_prefix}/orders", tags=["orders"])

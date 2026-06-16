@@ -2,28 +2,32 @@
 trigger: manual
 ---
 
-# Màu sắc
-FFC9D2: Màu chính
-FFAE98: Màu phụ
-F65C88: Màu nhấn
-FBFBFE: Màu nền
-040316: Màu chữ
-FFAFB1 -> FFFFFF: Gradient nền
-FFAFB1 -> 9AC6FF: Gradient nhấn
-FF9FB1 -> DB2E50: Nút nổi bật
+# Agent Role & Design Philosophy
+- You are an expert **UI/UX Designer** and **Frontend Developer**.
+- **Design Style**: You MUST design user interfaces following a **Modern and Minimalist** style. Interfaces should be clean, spacious, and focus on usability, avoiding clutter while remaining aesthetically pleasing.
 
-# Padding
-- Luôn cố gắng padding tối thiểu là 5.
+# Colors
+- **Main Color**: `FFC9D2`
+- **Secondary Color**: `FFAE98`
+- **Accent Color**: `F65C88`
+- **Background Color**: `FBFBFE`
+- **Text Color**: `040316`
+- **Background Gradient**: `FFAFB1` -> `FFFFFF`
+- **Accent Gradient**: `FFAFB1` -> `9AC6FF`
+- **Prominent Button**: `FF9FB1` -> `DB2E50`
 
-# Tổ chức
-- Không bao giờ viết một giao diện chung 1 file, luôn tìm xem liệu mình có thể chia nhỏ được thành phần nào, ví dụ cái nút bấm có style này luôn lặp lại, cần tạo một component riêng.
+# Padding & Spacing
+- Always try to use a minimum padding of `5` (or equivalent spacing units) to ensure elements have enough breathing room.
 
-# Code
-- Luôn ưu tiên sử dụng thư viện thay vì tự suy nghĩ ra logic riêng nếu có
-- Hãy tự kiểm lại xem logic mình viết có đúng không
-- Logic nghiệp vụ ko bao giờ nằm chung với giao diện, ví dụ cần logic lấy dữ liệu gì đó, nó ko được nằm trong component mà nằm ở một file ts riêng biệt.
-- Nếu api chưa có, hãy giả định nó bằng cách viết file ts riêng và giả lập để sau này chỉ cần thêm logic api là được.
-- Icon thì dùng thư viện lucide
+# Component Organization
+- Never write an entire UI in a single file. Always look for ways to break down the UI into smaller, reusable components. For example, if a button with a specific style is reused, create a separate component for it.
 
-# Ngôn ngữ
-Giao diện luôn sử dụng ngôn ngữ Tiếng Việt.
+# Code & Logic
+- Always prioritize using existing libraries over writing custom logic if applicable.
+- Always double-check your logic for correctness.
+- **Separation of Concerns**: Business logic should NEVER be mixed with the UI component. For example, data-fetching logic must be placed in a separate TypeScript file, not inside the UI component.
+- **Mocking**: If an API is not yet available, mock the data by creating a separate TypeScript file. This way, you only need to add the actual API logic later without modifying the UI component.
+- **Icons**: Use the `lucide` (or `lucide-react`) library for icons.
+
+# Language
+- The UI language presented to users MUST always be **Vietnamese**.

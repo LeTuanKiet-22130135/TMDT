@@ -20,6 +20,9 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/setupTests.ts',
   },
+  optimizeDeps: {
+    include: ['@apollo/client']
+  }
 })
 
 

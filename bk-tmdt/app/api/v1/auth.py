@@ -11,7 +11,10 @@ from app.core.security import (
     verify_password,
 )
 from app.models import ShoppingCart, User
+from datetime import datetime, timedelta, timezone
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserRead
+from app.services.email import send_otp_email
+import random
 
 
 router = APIRouter()
@@ -27,8 +30,8 @@ def _serialize_user(user: User) -> UserRead:
     )
 
 
-def _queue_verification_email(email: str, token: str) -> None:
-    _ = email, token
+def _queue_verification_email(email: str, name: str, otp: str) -> None:
+    send_otp_email(email, name, otp)
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -53,8 +56,13 @@ def register(
     db.commit()
     db.refresh(user)
 
-    verification_token = create_email_verification_token(str(user.id))
-    background_tasks.add_task(_queue_verification_email, user.email, verification_token)
+    otp = f"{random.randint(100000, 999999)}"
+    user.verification_otp = otp
+    user.verification_otp_expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+    db.commit()
+    db.refresh(user)
+
+    background_tasks.add_task(_queue_verification_email, user.email, user.full_name, otp)
 
     return TokenResponse(
         access_token=create_access_token(str(user.id)),
