@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Settings, LogOut, Package, User } from 'lucide-react';
+import { Settings, LogOut, Package, User, Store } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const UserMenu: React.FC = () => {
@@ -21,12 +21,12 @@ export const UserMenu: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');
-    window.location.reload(); 
+    window.location.reload();
   };
 
   return (
     <div className="relative" ref={menuRef}>
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-10 h-10 rounded-full overflow-hidden border-2 border-surface-container-high hover:border-[#f65c88] transition-colors duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-[#ffafb1]"
       >
@@ -64,14 +64,18 @@ export const UserMenu: React.FC = () => {
               <Package size={18} className="mr-3 text-gray-400" />
               <span className="font-medium text-sm">{t('user.menu.orders')}</span>
             </Link>
+            <Link to="/shops" onClick={() => setIsOpen(false)} className="flex items-center px-6 py-3 hover:bg-gray-50 transition-colors text-gray-700">
+              <Store size={18} className="mr-3 text-gray-400" />
+              <span className="font-medium text-sm">{t('user.menu.shops')}</span>
+            </Link>
             <Link to="/settings" onClick={() => setIsOpen(false)} className="flex items-center px-6 py-3 hover:bg-gray-50 transition-colors text-gray-700">
               <Settings size={18} className="mr-3 text-gray-400" />
               <span className="font-medium text-sm">{t('user.menu.settings')}</span>
             </Link>
           </div>
-          
+
           <div className="border-t border-gray-100 py-2">
-            <button 
+            <button
               onClick={handleLogout}
               className="w-full flex items-center px-6 py-3 hover:bg-red-50 transition-colors text-[#db2e50]"
             >

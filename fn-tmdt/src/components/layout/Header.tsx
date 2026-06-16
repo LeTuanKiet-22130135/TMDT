@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Bell } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LoginModal } from '../Auth/LoginModal';
 import { UserMenu } from '../User/UserMenu';
 import { CreateButton } from '../ui/CreateButton';
+import { SearchPanel } from './SearchPanel';
 
 export const Header: React.FC = () => {
   const { t } = useTranslation();
@@ -14,6 +15,20 @@ export const Header: React.FC = () => {
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
+  const [activeSearchTab, setActiveSearchTab] = useState<'shiro' | 'manual'>('shiro');
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setIsSearchPanelOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Check auth status on mount
   useEffect(() => {
@@ -33,12 +48,31 @@ export const Header: React.FC = () => {
           <span className="text-2xl font-bold tracking-tight text-on-surface">Lumine</span>
         </Link>
 
-        <div className="hidden md:flex items-center bg-surface-container-low px-4 py-2 rounded-full w-96 transition-shadow focus-within:shadow-md">
-          <Search className="text-on-surface-variant mr-2" size={20} />
-          <input
-            className="bg-transparent border-none focus:ring-0 text-sm w-full text-on-surface placeholder-on-surface-variant/60 outline-none"
-            placeholder={t('header.searchPlaceholder')}
-            type="text"
+        <div 
+          ref={searchContainerRef}
+          className="hidden md:flex flex-col relative"
+        >
+          <div 
+            className={`flex items-center bg-surface-container-low px-4 py-2 rounded-full w-96 transition-all ${
+              isSearchPanelOpen ? 'shadow-md ring-2 ring-[#ffafb1]' : 'focus-within:shadow-md'
+            } ${activeSearchTab === 'shiro' && isSearchPanelOpen ? 'opacity-80 bg-pink-50/30 border border-pink-100' : ''}`}
+            onClick={() => setIsSearchPanelOpen(true)}
+          >
+            <Search className={activeSearchTab === 'shiro' && isSearchPanelOpen ? 'text-[#f65c88]' : 'text-on-surface-variant mr-2'} size={20} />
+            <input
+              className={`bg-transparent border-none focus:ring-0 text-sm w-full text-on-surface outline-none ${
+                activeSearchTab === 'shiro' && isSearchPanelOpen ? 'text-[#f65c88] font-medium placeholder-[#f65c88]' : 'placeholder-on-surface-variant/60'
+              }`}
+              placeholder={activeSearchTab === 'shiro' && isSearchPanelOpen ? t('header.shiroSearching') : t('header.searchPlaceholder')}
+              type="text"
+              disabled={activeSearchTab === 'shiro' && isSearchPanelOpen}
+              readOnly={activeSearchTab === 'shiro' && isSearchPanelOpen}
+            />
+          </div>
+          <SearchPanel 
+            isOpen={isSearchPanelOpen} 
+            activeTab={activeSearchTab} 
+            onTabChange={setActiveSearchTab} 
           />
         </div>
       </div>

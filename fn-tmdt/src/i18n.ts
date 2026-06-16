@@ -49,10 +49,25 @@ const resources = {
       },
       header: {
         searchPlaceholder: "Tìm kiếm tài nguyên...",
+        shiroSearching: "Shiro đang sử dụng thanh tìm kiếm...",
         library: "Thư viện",
         create: "Tạo mới",
         login: "Đăng nhập",
-        register: "Đăng ký"
+        register: "Đăng ký",
+        searchPanel: {
+          shiro: {
+            tab: "Shiro",
+            title: "Sử dụng Shiro để tìm kiếm cho bạn",
+            promptPlaceholder: "Nhập yêu cầu của bạn, Shiro sẽ xử lý tất cả..."
+          },
+          manual: {
+            tab: "Manual",
+            title: "Lọc thủ công thông qua khung nhập",
+            priceFilter: "Lọc theo giá",
+            categoryFilter: "Danh mục",
+            tagsTitle: "Gợi ý cho bạn"
+          }
+        }
       },
       home: {
         title: "Bộ sưu tập tuần",
@@ -65,8 +80,12 @@ const resources = {
           profile: "Chỉnh sửa hồ sơ",
           settings: "Cài đặt",
           orders: "Đơn hàng của tôi",
+          shops: "Cửa hàng của tôi",
           logout: "Đăng xuất"
         }
+      },
+      footer: {
+        copyrightShort: "© {{year}} Lumine."
       }
     }
   }

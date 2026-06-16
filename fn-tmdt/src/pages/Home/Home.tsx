@@ -30,7 +30,7 @@ export const Home: React.FC = () => {
         <main className="flex-1 p-8 md:p-12 overflow-y-auto relative h-full">
           {/* Subtle background decoration */}
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-[#ffafb1]/10 to-transparent rounded-full blur-3xl -z-10 pointer-events-none" />
-          
+
           {isLoading ? (
             <LoadingSlime />
           ) : (
@@ -60,8 +60,8 @@ export const Home: React.FC = () => {
                   </div>
                 </div>
               </section>
-              
-              <ResponsiveMasonry columnsCountBreakPoints={{640: 1, 768: 2, 1024: 3, 1536: 4}}>
+
+              <ResponsiveMasonry columnsCountBreakPoints={{ 640: 1, 768: 2, 1024: 3, 1536: 4 }}>
                 <Masonry gutter="1.5rem">
                   {assets.map((asset) => (
                     <AssetCard key={asset.id} asset={asset} />
@@ -70,6 +70,7 @@ export const Home: React.FC = () => {
               </ResponsiveMasonry>
             </div>
           )}
+
         </main>
       </div>
       <BottomNav />
