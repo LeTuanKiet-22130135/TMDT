@@ -1,25 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Bell } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { LoginModal } from '../Auth/LoginModal';
+import { UserMenu } from '../User/UserMenu';
+import { CreateButton } from '../ui/CreateButton';
 
 export const Header: React.FC = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const isHome = location.pathname === '/';
   const isCustom = location.pathname === '/custom-requests';
 
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Check auth status on mount
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    setIsAuthenticated(!!token);
+  }, []);
+
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+  };
+
   return (
-    <header className="w-full sticky top-0 z-50 bg-surface shadow-sm flex items-center justify-between px-8 py-4 font-headline antialiased">
+    <header className="w-full sticky top-0 z-40 bg-surface shadow-sm flex items-center justify-between px-8 py-4 font-headline antialiased">
       <div className="flex items-center gap-8">
-        <Link to="/" className="hidden md:flex items-center gap-4">
-          <img src="/assets/img/logo.png" alt="Logo" className="w-12 h-12 img-pixelated" />
-          <span className="text-2xl font-bold tracking-tight text-on-surface">Atélier</span>
+        <Link to="/" className="hidden md:flex items-center gap-3">
+          <img src="/assets/img/logo.png" alt="Logo" className="w-10 h-10 object-contain drop-shadow-sm" />
+          <span className="text-2xl font-bold tracking-tight text-on-surface">Lumine</span>
         </Link>
 
-        <div className="hidden md:flex items-center bg-surface-container-low px-4 py-2 rounded-full w-96">
+        <div className="hidden md:flex items-center bg-surface-container-low px-4 py-2 rounded-full w-96 transition-shadow focus-within:shadow-md">
           <Search className="text-on-surface-variant mr-2" size={20} />
           <input
-            className="bg-transparent border-none focus:ring-0 text-sm w-full text-on-surface placeholder-on-surface-variant/60"
-            placeholder="Tìm kiếm tài nguyên..."
+            className="bg-transparent border-none focus:ring-0 text-sm w-full text-on-surface placeholder-on-surface-variant/60 outline-none"
+            placeholder={t('header.searchPlaceholder')}
             type="text"
           />
         </div>
@@ -31,29 +49,41 @@ export const Header: React.FC = () => {
           }`} 
           to="/"
         >
-          Thư viện
+          {t('header.library')}
         </Link>
-        <Link 
-          className={`transition-colors duration-200 ${
-            isCustom ? 'text-tertiary font-semibold border-b-2 border-tertiary' : 'text-on-surface-variant hover:text-tertiary'
-          }`} 
-          to="/custom-requests"
-        >
-          Tạo mới
-        </Link>
+        <CreateButton />
+        
         <div className="flex items-center gap-4 ml-4">
-          <button className="p-2 hover:bg-surface-bright rounded-full transition-colors duration-200">
+          <button className="p-2 hover:bg-surface-bright rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#ffafb1]">
             <Bell className="text-on-surface-variant" size={24} />
           </button>
-          <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-surface-container-high scale-102 transition-transform duration-300 ease-out">
-            <img
-              alt="Hồ sơ người dùng"
-              className="w-full h-full object-cover"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCgjenSZvmWQAHLKLu_fM4v9SZRZ5DPygvM4mF4-TlaoifBbIrtbx7MeVFpDB2CgAiBf6Olwz4ICP4Plwu_0wfr6r-N-ww-oFnsUeOMkWFCZ156VXAI6-zoqaMlPVQ1cxNZRWipMYMI9hvlB-aSrTz6cDJdt8v8cD9ZCeRcDBa5cSyGFLiMuffdtl8AbMa4HtDhvfdC3NwkAjOw2DAoum7ndBfvubfjy3t0mN2xPJZoRVeP1VS6yiFtETW8eVGimEItoeJTxP4ONZFz"
-            />
-          </div>
+          
+          {isAuthenticated ? (
+            <UserMenu />
+          ) : (
+            <div className="flex items-center gap-3 ml-2">
+              <button 
+                onClick={() => setIsLoginModalOpen(true)}
+                className="px-4 py-2 text-sm font-semibold text-gray-700 hover:text-[#f65c88] transition-colors focus:outline-none"
+              >
+                {t('header.login')}
+              </button>
+              <Link 
+                to="/register"
+                className="px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#f65c88] to-[#db2e50] rounded-full shadow-sm hover:shadow-md transition-all hover:opacity-90"
+              >
+                {t('header.register')}
+              </Link>
+            </div>
+          )}
         </div>
       </nav>
+
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)} 
+        onSuccess={handleLoginSuccess} 
+      />
     </header>
   );
 };

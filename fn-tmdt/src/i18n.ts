@@ -46,6 +46,27 @@ const resources = {
           terms: "Điều khoản dịch vụ",
           privacy: "Chính sách bảo mật"
         }
+      },
+      header: {
+        searchPlaceholder: "Tìm kiếm tài nguyên...",
+        library: "Thư viện",
+        create: "Tạo mới",
+        login: "Đăng nhập",
+        register: "Đăng ký"
+      },
+      home: {
+        title: "Bộ sưu tập tuần",
+        subtitle: "Những tài nguyên cao cấp được chọn lọc thủ công từ các nhà sáng tạo đổi mới nhất thế giới. Chiều sâu, kết cấu và linh hồn trong từng byte.",
+        latest: "Mới nhất",
+        popular: "Phổ biến"
+      },
+      user: {
+        menu: {
+          profile: "Chỉnh sửa hồ sơ",
+          settings: "Cài đặt",
+          orders: "Đơn hàng của tôi",
+          logout: "Đăng xuất"
+        }
       }
     }
   }

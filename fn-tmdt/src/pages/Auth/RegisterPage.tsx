@@ -43,6 +43,9 @@ const RegisterPage: React.FC = () => {
         {errorMsg && <div className="mb-4 text-[#db2e50] text-center">{errorMsg}</div>}
         <Input 
           type="text" 
+          name="fullName"
+          id="register-fullname"
+          autoComplete="name"
           placeholder={t('auth.register.fullNamePlaceholder')} 
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
@@ -51,6 +54,9 @@ const RegisterPage: React.FC = () => {
         />
         <Input 
           type="email" 
+          name="email"
+          id="register-email"
+          autoComplete="email"
           placeholder={t('auth.register.emailPlaceholder')} 
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -59,6 +65,9 @@ const RegisterPage: React.FC = () => {
         />
         <Input 
           type="password" 
+          name="password"
+          id="register-password"
+          autoComplete="new-password"
           placeholder={t('auth.register.passwordPlaceholder')} 
           value={password}
           onChange={(e) => setPassword(e.target.value)}

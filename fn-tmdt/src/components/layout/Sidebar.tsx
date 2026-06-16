@@ -8,7 +8,7 @@ export const Sidebar: React.FC = () => {
   const currentPath = location.pathname;
 
   return (
-    <aside className="hidden md:flex flex-col h-screen sticky left-0 top-16 bg-surface-container-low w-64 p-4 gap-2 font-label text-sm shadow-[32px_0_32px_-12px_rgba(26,25,47,0.06)] border-r border-outline-variant/15 shrink-0">
+    <aside className="hidden md:flex flex-col h-full overflow-y-auto bg-surface-container-low w-64 p-4 gap-2 font-label text-sm shadow-[32px_0_32px_-12px_rgba(26,25,47,0.06)] border-r border-outline-variant/15 shrink-0">
       <div className="px-4 py-6 mb-4">
         <h2 className="text-xl font-black text-tertiary font-headline">Khám phá</h2>
         <p className="text-xs text-on-surface-variant opacity-70">Tài nguyên chọn lọc</p>

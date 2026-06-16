@@ -39,6 +39,9 @@ const LoginPage: React.FC = () => {
         {errorMsg && <div className="mb-4 text-[#db2e50] text-center">{errorMsg}</div>}
         <Input 
           type="email" 
+          name="email"
+          id="login-page-email"
+          autoComplete="email"
           placeholder={t('auth.login.emailPlaceholder')} 
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -47,6 +50,9 @@ const LoginPage: React.FC = () => {
         />
         <Input 
           type="password" 
+          name="password"
+          id="login-page-password"
+          autoComplete="current-password"
           placeholder={t('auth.login.passwordPlaceholder')} 
           value={password}
           onChange={(e) => setPassword(e.target.value)}
