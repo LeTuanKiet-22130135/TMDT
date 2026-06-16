@@ -6,7 +6,7 @@ Tài liệu này hướng dẫn bạn cách cấu hình hệ thống gửi email
 
 ## 1. Cấu hình biến môi trường (.env)
 
-Mở file `.env` nằm trong thư mục `bk-tmdt/` và thêm (hoặc cập nhật) các biến môi trường sau:
+Mở file `.env.sample` nằm trong thư mục `bk-tmdt/` và thêm (hoặc cập nhật) các biến môi trường sau:
 
 ```ini
 SMTP_HOST=smtp.gmail.com       # Hoặc host của nhà cung cấp dịch vụ mail bạn dùng
@@ -15,6 +15,8 @@ SMTP_USERNAME=your_email@gmail.com
 SMTP_PASSWORD=your_app_password
 SMTP_FROM_EMAIL=your_email@gmail.com
 ```
+
+Lưu lại thành file `.env`
 
 **Lưu ý đối với Gmail:**
 - Bạn không thể dùng mật khẩu đăng nhập bình thường do chính sách bảo mật.
