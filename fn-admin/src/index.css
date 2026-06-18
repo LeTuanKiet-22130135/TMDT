@@ -1,0 +1,55 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: #0f1117;
+  --surface: #1a1d27;
+  --surface-raised: #232736;
+  --border: #2e3347;
+  --border-subtle: #1e2235;
+
+  --text-primary: #e8eaf0;
+  --text-secondary: #8b90a7;
+  --text-muted: #555c78;
+
+  --accent: #6c63ff;
+  --accent-hover: #5b52e8;
+  --accent-subtle: #6c63ff1a;
+
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
+
+  --font-sans: "Geist Variable", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
