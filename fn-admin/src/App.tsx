@@ -8,6 +8,7 @@ import UsersPage from "@/pages/Users/UsersPage";
 import ProductsPage from "@/pages/Products/ProductsPage";
 import OrdersPage from "@/pages/Orders/OrdersPage";
 import StoresPage from "@/pages/Stores/StoresPage";
+import ReportsPage from "@/pages/Reports/ReportsPage";
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
               <Route path="/products" element={<ProductsPage />} />
               <Route path="/orders" element={<OrdersPage />} />
               <Route path="/stores" element={<StoresPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -30,3 +32,4 @@ export default function App() {
     </AuthProvider>
   );
 }
+

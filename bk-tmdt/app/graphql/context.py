@@ -28,10 +28,12 @@ def _resolve_current_user(request: Request, db: Session) -> User | None:
 
     try:
         user_id = get_token_subject(token, expected_type="access")
-    except JWTError:
+        from uuid import UUID
+        user_uuid = UUID(user_id)
+    except (JWTError, ValueError):
         return None
 
-    user = db.get(User, user_id)
+    user = db.get(User, user_uuid)
     if user is None or not user.is_active:
         return None
     return user

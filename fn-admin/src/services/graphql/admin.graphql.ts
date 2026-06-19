@@ -139,3 +139,46 @@ export const TOGGLE_STORE_MUTATION = gql`
     }
   }
 `;
+
+export const GET_ALL_REPORTS = gql`
+  query AdminReports($page: Int, $limit: Int) {
+    adminReports(page: $page, limit: $limit) {
+      items {
+        id
+        reporterId
+        reportedStoreId
+        reportedUserId
+        reportType
+        reason
+        status
+        createdAt
+        reporter {
+          id
+          email
+          username
+        }
+        reportedStore {
+          id
+          name
+        }
+        reportedUser {
+          id
+          email
+          username
+        }
+      }
+      totalItems
+      totalPages
+    }
+  }
+`;
+
+export const RESOLVE_REPORT_MUTATION = gql`
+  mutation ResolveReport($reportId: UUID!) {
+    resolveReport(reportId: $reportId) {
+      id
+      status
+    }
+  }
+`;
+

@@ -18,17 +18,26 @@ from app.crud.products import (
 )
 from app.crud.stores import get_store, search_stores
 from app.graphql.context import get_graphql_context
+from decimal import Decimal
+from sqlalchemy import select, func
 from app.graphql.types import (
     ProductConnection,
     ProductType,
     StoreConnection,
     StoreType,
     UserType,
+    AdminStatsType,
+    UserConnection,
+    OrderConnection,
+    ReportConnection,
     to_product_type,
     to_store_type,
     to_user_type,
+    to_order_type,
+    to_report_type,
 )
-from app.models import User
+from app.models import User, Order, Report, Product, Store, RoleEnum, OrderStatusEnum
+
 
 
 @strawberry.enum
@@ -139,6 +148,170 @@ class Query:
     @strawberry.field
     def store_products(self, info: Info, store_id: UUID) -> list[ProductType]:
         return [to_product_type(product) for product in list_products_by_store(_db(info), store_id)]
+
+    @strawberry.field
+    def admin_stats(self, info: Info) -> AdminStatsType:
+        user = _current_user(info)
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+        
+        db = _db(info)
+        total_users = db.scalar(select(func.count(User.id))) or 0
+        total_orders = db.scalar(select(func.count(Order.id))) or 0
+        total_products = db.scalar(select(func.count(Product.id))) or 0
+        total_stores = db.scalar(select(func.count(Store.id))) or 0
+        
+        total_revenue = db.scalar(select(func.sum(Order.final_amount)).where(Order.status == OrderStatusEnum.COMPLETED)) or Decimal("0.0")
+        pending_orders = db.scalar(select(func.count(Order.id)).where(Order.status == OrderStatusEnum.PENDING)) or 0
+        
+        return AdminStatsType(
+            total_users=total_users,
+            total_orders=total_orders,
+            total_products=total_products,
+            total_stores=total_stores,
+            total_revenue=float(total_revenue),
+            pending_orders=pending_orders,
+        )
+
+    @strawberry.field
+    def admin_users(
+        self, info: Info, page: int = 1, limit: int = 10, q: str | None = None
+    ) -> UserConnection:
+        user = _current_user(info)
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+        
+        db = _db(info)
+        safe_page = max(page, 1)
+        safe_limit = min(max(limit, 1), 100)
+        
+        stmt = select(User)
+        if q:
+            stmt = stmt.where(
+                User.email.ilike(f"%{q}%") | 
+                User.full_name.ilike(f"%{q}%")
+            )
+        
+        total_items = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+        
+        stmt = stmt.order_by(User.created_at.desc()).offset((safe_page - 1) * safe_limit).limit(safe_limit)
+        items = db.scalars(stmt).all()
+        
+        return UserConnection(
+            items=[to_user_type(u) for u in items],
+            total_items=total_items,
+            total_pages=ceil(total_items / safe_limit) if total_items else 0,
+        )
+
+    @strawberry.field
+    def admin_products(
+        self, info: Info, page: int = 1, limit: int = 10, q: str | None = None
+    ) -> ProductConnection:
+        user = _current_user(info)
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+        
+        db = _db(info)
+        safe_page = max(page, 1)
+        safe_limit = min(max(limit, 1), 100)
+        
+        stmt = select(Product)
+        if q:
+            stmt = stmt.where(Product.name.ilike(f"%{q}%"))
+            
+        total_items = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+        
+        stmt = stmt.order_by(Product.created_at.desc()).offset((safe_page - 1) * safe_limit).limit(safe_limit)
+        items = db.scalars(stmt).all()
+        
+        return ProductConnection(
+            items=[to_product_type(p) for p in items],
+            total_items=total_items,
+            total_pages=ceil(total_items / safe_limit) if total_items else 0,
+        )
+
+    @strawberry.field
+    def admin_orders(
+        self, info: Info, page: int = 1, limit: int = 10, status: str | None = None
+    ) -> OrderConnection:
+        user = _current_user(info)
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+        
+        db = _db(info)
+        safe_page = max(page, 1)
+        safe_limit = min(max(limit, 1), 100)
+        
+        stmt = select(Order)
+        if status:
+            try:
+                status_enum = OrderStatusEnum(status.upper())
+                stmt = stmt.where(Order.status == status_enum)
+            except ValueError:
+                pass
+                
+        total_items = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+        
+        stmt = stmt.order_by(Order.created_at.desc()).offset((safe_page - 1) * safe_limit).limit(safe_limit)
+        items = db.scalars(stmt).all()
+        
+        return OrderConnection(
+            items=[to_order_type(o) for o in items],
+            total_items=total_items,
+            total_pages=ceil(total_items / safe_limit) if total_items else 0,
+        )
+
+    @strawberry.field
+    def admin_stores(
+        self, info: Info, page: int = 1, limit: int = 10, q: str | None = None
+    ) -> StoreConnection:
+        user = _current_user(info)
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+        
+        db = _db(info)
+        safe_page = max(page, 1)
+        safe_limit = min(max(limit, 1), 100)
+        
+        stmt = select(Store)
+        if q:
+            stmt = stmt.where(Store.name.ilike(f"%{q}%"))
+            
+        total_items = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+        
+        stmt = stmt.order_by(Store.created_at.desc()).offset((safe_page - 1) * safe_limit).limit(safe_limit)
+        items = db.scalars(stmt).all()
+        
+        return StoreConnection(
+            items=[to_store_type(s) for s in items],
+            total_items=total_items,
+            total_pages=ceil(total_items / safe_limit) if total_items else 0,
+        )
+
+    @strawberry.field
+    def admin_reports(
+        self, info: Info, page: int = 1, limit: int = 10
+    ) -> ReportConnection:
+        user = _current_user(info)
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+        
+        db = _db(info)
+        safe_page = max(page, 1)
+        safe_limit = min(max(limit, 1), 100)
+        
+        stmt = select(Report)
+        total_items = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+        
+        stmt = stmt.order_by(Report.created_at.desc()).offset((safe_page - 1) * safe_limit).limit(safe_limit)
+        items = db.scalars(stmt).all()
+        
+        return ReportConnection(
+            items=[to_report_type(r) for r in items],
+            total_items=total_items,
+            total_pages=ceil(total_items / safe_limit) if total_items else 0,
+        )
+
 
 from app.graphql.mutations import AuthMutation
 

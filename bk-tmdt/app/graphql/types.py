@@ -3,17 +3,20 @@ from decimal import Decimal
 
 import strawberry
 
-from app.models import Product, Store, User
+from app.models import Product, Store, User, Order, Report
 
 
 @strawberry.type
 class UserType:
     id: str
     email: str
+    username: str
     full_name: str
     role: str
     is_verified: bool
     reward_points: int
+    is_active: bool
+    created_at: datetime
 
 
 @strawberry.type
@@ -26,6 +29,7 @@ class StoreType:
     is_active: bool
     updated_at: datetime
     created_at: datetime
+    owner: UserType
 
 
 @strawberry.type
@@ -37,6 +41,7 @@ class ProductType:
     description: str
     price: float
     stock_quantity: int
+    stock: int
     sold_quantity: int
     view_count: int
     brand: str | None
@@ -44,6 +49,8 @@ class ProductType:
     is_active: bool
     updated_at: datetime
     created_at: datetime
+    store: StoreType
+
 
 
 @strawberry.type
@@ -60,14 +67,72 @@ class StoreConnection:
     total_pages: int
 
 
+@strawberry.type
+class UserConnection:
+    items: list[UserType]
+    total_items: int
+    total_pages: int
+
+
+@strawberry.type
+class OrderType:
+    id: str
+    status: str
+    total_amount: float
+    created_at: datetime
+    buyer: UserType
+
+
+@strawberry.type
+class OrderConnection:
+    items: list[OrderType]
+    total_items: int
+    total_pages: int
+
+
+@strawberry.type
+class ReportType:
+    id: str
+    reporter_id: str
+    reported_store_id: str | None
+    reported_user_id: str | None
+    report_type: str
+    reason: str
+    status: str
+    created_at: datetime
+    reporter: UserType
+    reported_store: StoreType | None
+    reported_user: UserType | None
+
+
+@strawberry.type
+class ReportConnection:
+    items: list[ReportType]
+    total_items: int
+    total_pages: int
+
+
+@strawberry.type
+class AdminStatsType:
+    total_users: int
+    total_orders: int
+    total_products: int
+    total_stores: int
+    total_revenue: float
+    pending_orders: int
+
+
 def to_user_type(user: User) -> UserType:
     return UserType(
         id=str(user.id),
         email=user.email,
+        username=user.email.split('@')[0],
         full_name=user.full_name,
         role=user.role.value,
         is_verified=user.is_verified,
         reward_points=user.reward_points,
+        is_active=user.is_active,
+        created_at=user.created_at,
     )
 
 
@@ -81,6 +146,7 @@ def to_store_type(store: Store) -> StoreType:
         is_active=store.is_active,
         updated_at=store.updated_at,
         created_at=store.created_at,
+        owner=to_user_type(store.owner),
     )
 
 
@@ -93,6 +159,7 @@ def to_product_type(product: Product) -> ProductType:
         description=product.description,
         price=_as_float(product.price),
         stock_quantity=product.stock_quantity,
+        stock=product.stock_quantity,
         sold_quantity=product.sold_quantity,
         view_count=product.view_count,
         brand=product.brand,
@@ -100,8 +167,36 @@ def to_product_type(product: Product) -> ProductType:
         is_active=product.is_active,
         updated_at=product.updated_at,
         created_at=product.created_at,
+        store=to_store_type(product.store),
+    )
+
+
+
+def to_order_type(order: Order) -> OrderType:
+    return OrderType(
+        id=str(order.id),
+        status=order.status.value,
+        total_amount=_as_float(order.total_amount),
+        created_at=order.created_at,
+        buyer=to_user_type(order.user),
+    )
+
+
+def to_report_type(report: Report) -> ReportType:
+    return ReportType(
+        id=str(report.id),
+        reporter_id=str(report.reporter_id),
+        reported_store_id=str(report.reported_store_id) if report.reported_store_id else None,
+        reported_user_id=str(report.reported_user_id) if report.reported_user_id else None,
+        report_type=report.report_type.value,
+        reason=report.reason,
+        status=report.status.value,
+        created_at=report.created_at,
+        reporter=to_user_type(report.reporter),
+        reported_store=to_store_type(report.reported_store) if report.reported_store else None,
+        reported_user=to_user_type(report.reported_user) if report.reported_user else None,
     )
 
 
 def _as_float(value: Decimal | float | int) -> float:
-    return float(value)
+    return float(value)

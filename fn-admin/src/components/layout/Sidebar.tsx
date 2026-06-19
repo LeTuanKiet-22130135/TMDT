@@ -7,6 +7,7 @@ import {
   Store,
   LogOut,
   ShieldCheck,
+  Flag,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -17,7 +18,9 @@ const navItems = [
   { to: "/products", icon: Package, label: "Sản phẩm" },
   { to: "/orders", icon: ShoppingCart, label: "Đơn hàng" },
   { to: "/stores", icon: Store, label: "Cửa hàng" },
+  { to: "/reports", icon: Flag, label: "Báo cáo vi phạm" },
 ];
+
 
 export default function Sidebar() {
   const { user, logout } = useAuth();

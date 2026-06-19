@@ -30,13 +30,24 @@ src/pages/Users: Quản lý người dùng (ban/unban)
 src/pages/Products: Quản lý sản phẩm (ẩn/hiện)
 src/pages/Orders: Quản lý đơn hàng (filter theo status)
 src/pages/Stores: Quản lý cửa hàng (khóa/mở)
+src/pages/Reports: Quản lý báo cáo vi phạm (xem, lọc và xử lý báo cáo)
 src/services/graphql: GraphQL queries & mutations cho admin
 
 
 # Backend
-- graphql
+- GraphQL là phương thức giao tiếp API chính thống nhất giữa Frontend và Backend.
+- Sử dụng ORM (SQLAlchemy) cho toàn bộ tương tác cơ sở dữ liệu.
 
 ## bk-tmdt
+- FastAPI (Python) làm Web Framework.
+- Strawberry làm GraphQL Library phục vụ xây dựng Schema, Query và Mutation.
+- SQLAlchemy làm ORM kết nối DB.
+- Cấu trúc thư mục chính:
+  - `app/graphql/types.py`: Định nghĩa các GraphQL Type tương ứng với Model và Connection Types (ví dụ: `UserConnection`, `ReportConnection`).
+  - `app/graphql/schema.py`: Chứa các GraphQL Query chính (ví dụ: `adminStats`, `adminReports`).
+  - `app/graphql/mutations.py`: Chứa các GraphQL Mutation nghiệp vụ (ví dụ: `banUser`, `resolveReport`).
+  - `app/models/`: Định nghĩa các Model SQLAlchemy (ví dụ: `User`, `Store`, `Report`, `Product`, `Order`).
+  - `tests/`: Chứa các bài kiểm thử GraphQL API sử dụng pytest và SQLite in-memory engine.
 
 ## bk-cacao
 - python

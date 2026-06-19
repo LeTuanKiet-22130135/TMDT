@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status, BackgroundTasks
 from typing import cast
 
-from app.models import ShoppingCart, User
+from uuid import UUID
+from app.models import ShoppingCart, User, Store, Product, Report, ReportStatusEnum, RoleEnum
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -15,8 +16,18 @@ from app.core.security import (
 from app.api.v1.auth import _queue_verification_email
 import random
 from datetime import datetime, timedelta, timezone
-from app.graphql.types import to_user_type
+from app.graphql.types import (
+    to_user_type,
+    to_product_type,
+    to_store_type,
+    to_report_type,
+    UserType,
+    ProductType,
+    StoreType,
+    ReportType,
+)
 from app.graphql.auth_types import TokenType
+
 
 def _db(info: Info) -> Session:
     return info.context["db"]
@@ -97,3 +108,89 @@ class AuthMutation:
         user.verification_otp_expires_at = None
         db.commit()
         return True
+
+    @strawberry.mutation
+    def banUser(self, info: Info, userId: UUID) -> UserType:
+        user = info.context.get("current_user")
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+        
+        db = _db(info)
+        target_user = db.get(User, userId)
+        if target_user is None:
+            raise Exception("User not found")
+            
+        target_user.is_active = False
+        db.add(target_user)
+        db.commit()
+        db.refresh(target_user)
+        return to_user_type(target_user)
+
+    @strawberry.mutation
+    def unbanUser(self, info: Info, userId: UUID) -> UserType:
+        user = info.context.get("current_user")
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+        
+        db = _db(info)
+        target_user = db.get(User, userId)
+        if target_user is None:
+            raise Exception("User not found")
+            
+        target_user.is_active = True
+        db.add(target_user)
+        db.commit()
+        db.refresh(target_user)
+        return to_user_type(target_user)
+
+    @strawberry.mutation
+    def adminToggleProduct(self, info: Info, productId: UUID) -> ProductType:
+        user = info.context.get("current_user")
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+        
+        db = _db(info)
+        product = db.get(Product, productId)
+        if product is None:
+            raise Exception("Product not found")
+            
+        product.is_active = not product.is_active
+        db.add(product)
+        db.commit()
+        db.refresh(product)
+        return to_product_type(product)
+
+    @strawberry.mutation
+    def adminToggleStore(self, info: Info, storeId: UUID) -> StoreType:
+        user = info.context.get("current_user")
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+        
+        db = _db(info)
+        store = db.get(Store, storeId)
+        if store is None:
+            raise Exception("Store not found")
+            
+        store.is_active = not store.is_active
+        db.add(store)
+        db.commit()
+        db.refresh(store)
+        return to_store_type(store)
+
+    @strawberry.mutation
+    def resolveReport(self, info: Info, reportId: UUID) -> ReportType:
+        user = info.context.get("current_user")
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+        
+        db = _db(info)
+        report = db.get(Report, reportId)
+        if report is None:
+            raise Exception("Report not found")
+            
+        report.status = ReportStatusEnum.RESOLVED
+        db.add(report)
+        db.commit()
+        db.refresh(report)
+        return to_report_type(report)
+
