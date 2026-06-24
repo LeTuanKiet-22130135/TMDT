@@ -46,9 +46,27 @@ CORS_ORIGINS=["*"]
 REWARD_POINTS_EARN_THRESHOLD_VND=100000
 REWARD_POINT_VALUE_VND=1000
 WEBHOOK_SECRET=change-me
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+FACEBOOK_CLIENT_ID=
+FACEBOOK_CLIENT_SECRET=
+PAYMENT_API_KEY=
+SMTP_HOST=sandbox.smtp.mailtrap.io
+SMTP_PORT=2525
+SMTP_USERNAME=
+SMTP_PASSWORD=
+SMTP_FROM_EMAIL=noreply@tmdt.com
 ```
 
 Frontend note: `CORS_ORIGINS` is currently open, so local frontend dev servers can call the API without extra CORS work.
+
+Where to put each key:
+
+- Database connection string: `DB_URL`
+- Third-party login credentials: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `FACEBOOK_CLIENT_ID`, `FACEBOOK_CLIENT_SECRET`
+- Payment provider API key: `PAYMENT_API_KEY`
+- Payment webhook secret: `WEBHOOK_SECRET`
+- Email delivery credentials: `SMTP_*`
 
 ## Database setup
 
@@ -65,6 +83,8 @@ python seed.py
 ```
 
 The seed script creates sample admin, buyer, seller, store, categories, products, orders, reviews, comments, and reports.
+
+Important: any time you change or add fields, relationships, enums, or other ORM model definitions in `app/models/`, generate a new Alembic migration before merging or handing the change off.
 
 ## Run the backend
 

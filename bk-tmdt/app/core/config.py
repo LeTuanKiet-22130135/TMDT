@@ -24,6 +24,15 @@ class Settings(BaseSettings):
     reward_point_value_vnd: int = Field(default=1000, validation_alias="REWARD_POINT_VALUE_VND")
     webhook_secret: str = Field(default="change-me", validation_alias="WEBHOOK_SECRET")
 
+    # Third-party login providers
+    google_client_id: str = Field(default="", validation_alias="GOOGLE_CLIENT_ID")
+    google_client_secret: str = Field(default="", validation_alias="GOOGLE_CLIENT_SECRET")
+    facebook_client_id: str = Field(default="", validation_alias="FACEBOOK_CLIENT_ID")
+    facebook_client_secret: str = Field(default="", validation_alias="FACEBOOK_CLIENT_SECRET")
+
+    # Payment provider credentials
+    payment_api_key: str = Field(default="", validation_alias="PAYMENT_API_KEY")
+
     # Mailtrap Settings
     smtp_host: str = Field(default="sandbox.smtp.mailtrap.io", validation_alias="SMTP_HOST")
     smtp_port: int = Field(default=2525, validation_alias="SMTP_PORT")
