@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     reward_point_value_vnd: int = Field(default=1000, validation_alias="REWARD_POINT_VALUE_VND")
     webhook_secret: str = Field(default="change-me", validation_alias="WEBHOOK_SECRET")
 
+    # Agent tool settings
+    agent_api_key: str = Field(default="change-me-agent-key", validation_alias="AGENT_API_KEY")
+    # Set TEST_MODE=true in .env to skip OTP verification (never use in production)
+    test_mode: bool = Field(default=False, validation_alias="TEST_MODE")
+
     # Third-party login providers
     google_client_id: str = Field(default="", validation_alias="GOOGLE_CLIENT_ID")
     google_client_secret: str = Field(default="", validation_alias="GOOGLE_CLIENT_SECRET")

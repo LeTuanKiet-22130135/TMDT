@@ -1,0 +1,54 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: tmdt_db_staging
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASS:-123}
+      POSTGRES_DB: tmdt
+    volumes:
+      - postgres_data_staging:/var/lib/postgresql/data
+    networks:
+      - nginx-network
+    restart: unless-stopped
+
+  bk-tmdt:
+    image: hub.hizozima.duckdns.org/bk-tmdt:latest
+    container_name: bk-tmdt_staging
+    environment:
+      - DB_URL=postgresql+psycopg2://postgres:${DB_PASS:-123}@db:5432/tmdt
+    depends_on:
+      - db
+    networks:
+      - nginx-network
+    restart: unless-stopped
+
+  bk-cacao:
+    image: hub.hizozima.duckdns.org/bk-cacao:latest
+    container_name: bk-cacao_staging
+    depends_on:
+      - db
+    networks:
+      - nginx-network
+    restart: unless-stopped
+
+  fn-tmdt:
+    image: hub.hizozima.duckdns.org/fn-tmdt:latest
+    container_name: fn-tmdt_staging
+    networks:
+      - nginx-network
+    restart: unless-stopped
+
+  fn-admin:
+    image: hub.hizozima.duckdns.org/fn-admin:latest
+    container_name: fn-admin_staging
+    networks:
+      - nginx-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data_staging:
+
+networks:
+  nginx-network:
+    external: true

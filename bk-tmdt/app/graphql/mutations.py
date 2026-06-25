@@ -108,12 +108,25 @@ class AuthMutation:
     @strawberry.mutation
     def verifyOtp(self, info: Info, email: str, otp: str) -> bool:
         from datetime import datetime, timezone
+        from app.core.config import settings
+
         db = _db(info)
         user = db.scalar(select(User).where(User.email == email))
         if user is None:
             raise Exception("Không tìm thấy tài khoản")
 
         if user.is_verified:
+            return True
+
+        # ── Test mode bypass ─────────────────────────────────────────────────
+        # Khi TEST_MODE=true trong .env, OTP magic "000000" luôn được chấp nhận.
+        # KHÔNG BAO GIỜ bật tính năng này trên production.
+        # ─────────────────────────────────────────────────────────────────────
+        if settings.test_mode and otp == "000000":
+            user.is_verified = True
+            user.verification_otp = None
+            user.verification_otp_expires_at = None
+            db.commit()
             return True
 
         if not user.verification_otp or user.verification_otp != otp:
@@ -127,6 +140,7 @@ class AuthMutation:
         user.verification_otp_expires_at = None
         db.commit()
         return True
+
 
     @strawberry.mutation
     def banUser(self, info: Info, userId: UUID) -> UserType:
