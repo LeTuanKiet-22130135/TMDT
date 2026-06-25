@@ -42,17 +42,20 @@ def execute_graphql(url: str, query: str, variables: Dict[str, Any] = None, head
 
 def main():
     parser = argparse.ArgumentParser(description="Agent GraphQL Client")
-    parser.add_argument('action', choices=['login', 'create-product', 'update-product', 'verify-otp'])
-    parser.add_argument('--email', help="Email for login/verify")
-    parser.add_argument('--password', help="Password for login")
+    parser.add_argument('action', choices=['login', 'register', 'create-product', 'update-product', 'verify-otp'])
+    parser.add_argument('--email', help="Email for login/verify/register")
+    parser.add_argument('--password', help="Password for login/register")
+    parser.add_argument('--fullname', help="Full name for register")
+    parser.add_argument('--role', help="Role for register (e.g. BUYER)")
     parser.add_argument('--otp', help="OTP for verify-otp", default="000000")
     parser.add_argument('--token', help="Bearer token for authenticated requests")
     parser.add_argument('--name', help="Product name")
     parser.add_argument('--desc', help="Product description")
-    parser.add_argument('--price', type=float, help="Product price")
+    parser.add_argument('--price', type=float, help="Product price (VND)")
     parser.add_argument('--image', help="Product image URL")
     parser.add_argument('--id', help="Product ID to update")
     parser.add_argument('--active', type=bool, help="Set active status for product")
+    parser.add_argument('--url', help="Base URL for the GraphQL API", default="http://localhost:8000")
     
     args = parser.parse_args()
     
@@ -63,8 +66,8 @@ def main():
         # Fallback to absolute path if relative fails
         agent_key = get_env_var("/home/huy/Workspace/TMDT/bk-tmdt/.env", "AGENT_API_KEY")
     
-    agent_url = "http://localhost:8000/agent/graphql"
-    main_url = "http://localhost:8000/graphql"
+    agent_url = f"{args.url.rstrip('/')}/agent/graphql"
+    main_url = f"{args.url.rstrip('/')}/graphql"
     
     headers = {"X-Agent-Key": agent_key}
     if args.token:
@@ -80,6 +83,23 @@ def main():
         }
         """
         res = execute_graphql(agent_url, query, {"email": args.email, "password": args.password}, headers)
+        print(json.dumps(res, indent=2))
+        
+    elif args.action == 'register':
+        query = """
+        mutation($email: String!, $password: String!, $fullName: String!, $role: String!) {
+          agentRegister(email: $email, password: $password, fullName: $fullName, role: $role) {
+            accessToken
+            user { id email role isVerified }
+          }
+        }
+        """
+        res = execute_graphql(agent_url, query, {
+            "email": args.email, 
+            "password": args.password,
+            "fullName": args.fullname or "Test User",
+            "role": args.role or "BUYER"
+        }, headers)
         print(json.dumps(res, indent=2))
         
     elif args.action == 'verify-otp':

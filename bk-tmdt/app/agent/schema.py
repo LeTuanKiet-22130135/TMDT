@@ -29,6 +29,7 @@ from app.agent.types import AgentProductType, AgentTokenType, AgentUserType
 from app.core.security import create_access_token, verify_password, hash_password
 from app.models import Category, Product, ShoppingCart, Store, User
 from app.models.entities import RoleEnum
+from app.graphql.mutations.utils import _generate_shortlink
 
 CACAO_BASE_URL = os.getenv("CACAO_URL", "http://localhost:8001")
 
@@ -133,9 +134,14 @@ class AgentMutation:
             full_name=full_name,
             role=user_role,
             is_verified=True,  # bypass OTP
-            is_active=True
+            is_active=True,
+            shortlink=_generate_shortlink(db)
         )
         db.add(user)
+        db.flush()
+        db.add(ShoppingCart(user_id=user.id))
+        store_name = f"{full_name.strip()} ({email.split('@')[0]})"
+        db.add(Store(owner_id=user.id, name=store_name))
         db.commit()
         db.refresh(user)
 

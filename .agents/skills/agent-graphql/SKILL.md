@@ -16,50 +16,58 @@ This skill provides instructions for the agent to interact with its dedicated Gr
 
 ## Execution Steps
 
+You can use the provided client script (`.agents/skills/agent-graphql/scripts/client.py`) instead of manual `curl` commands. The script automatically reads the `AGENT_API_KEY` from the backend's `.env` file. You can also specify a custom host with the `--url` flag (defaults to `http://localhost:8000`).
+
 ### 1. Authentication (Login)
-To get an access token, use the `agentLogin` mutation.
+To get an access token, use the `login` action.
 ```bash
-curl -X POST http://localhost:8000/agent/graphql \
-  -H "Content-Type: application/json" \
-  -H "X-Agent-Key: <AGENT_API_KEY>" \
-  -d '{"query": "mutation { agentLogin(email: \"<EMAIL>\", password: \"<PASSWORD>\") { accessToken user { id email role } } }"}'
+python .agents/skills/agent-graphql/scripts/client.py login \
+  --email "<EMAIL>" \
+  --password "<PASSWORD>" \
+  [--url "http://localhost:8000"]
 ```
 
 ### 1.5 Registration (Bypass OTP)
-To register a new user without OTP verification, use the `agentRegister` mutation.
+To register a new user without OTP verification, use the `register` action.
 ```bash
-curl -X POST http://localhost:8000/agent/graphql \
-  -H "Content-Type: application/json" \
-  -H "X-Agent-Key: <AGENT_API_KEY>" \
-  -d '{"query": "mutation { agentRegister(email: \"<EMAIL>\", password: \"<PASSWORD>\", fullName: \"<NAME>\", role: \"BUYER\") { accessToken user { id email role isVerified } } }"}'
+python .agents/skills/agent-graphql/scripts/client.py register \
+  --email "<EMAIL>" \
+  --password "<PASSWORD>" \
+  --fullname "<NAME>" \
+  --role "BUYER" \
+  [--url "http://localhost:8000"]
 ```
 
 ### 2. Creating a Product
 Creating a product requires a Bearer token of the seller.
 ```bash
-curl -X POST http://localhost:8000/agent/graphql \
-  -H "Content-Type: application/json" \
-  -H "X-Agent-Key: <AGENT_API_KEY>" \
-  -H "Authorization: Bearer <ACCESS_TOKEN>" \
-  -d '{"query": "mutation { agentCreateProduct(name: \"<NAME>\", description: \"<DESC>\", price: <PRICE>, imageUrls: [\"<URL>\"]) { id name price } }"}'
+python .agents/skills/agent-graphql/scripts/client.py create-product \
+  --token "<ACCESS_TOKEN>" \
+  --name "<NAME>" \
+  --desc "<DESC>" \
+  --price <PRICE_IN_VND> \
+  --image "<URL>" \
+  [--url "http://localhost:8000"]
 ```
 
 ### 3. Updating a Product (Admin Privilege)
-You can update *any* product regardless of the seller, but you still need a valid Bearer token for auditing/context.
+You can update *any* product regardless of the seller.
 ```bash
-curl -X POST http://localhost:8000/agent/graphql \
-  -H "Content-Type: application/json" \
-  -H "X-Agent-Key: <AGENT_API_KEY>" \
-  -H "Authorization: Bearer <ACCESS_TOKEN>" \
-  -d '{"query": "mutation { agentUpdateProduct(productId: \"<UUID>\", price: <NEW_PRICE>, isActive: true) { id price isActive } }"}'
+python .agents/skills/agent-graphql/scripts/client.py update-product \
+  --token "<ACCESS_TOKEN>" \
+  --id "<UUID>" \
+  --price <NEW_PRICE_IN_VND> \
+  --active True \
+  [--url "http://localhost:8000"]
 ```
 
 ### 4. Bypassing OTP (Test Mode)
-In development/test environments where `TEST_MODE=true` is set in `.env`, you can verify any account using the magic OTP `000000` via the main graphql endpoint or through the agent if applicable.
+In development/test environments where `TEST_MODE=true` is set, you can verify any account using the magic OTP `000000`.
 ```bash
-curl -X POST http://localhost:8000/graphql \
-  -H "Content-Type: application/json" \
-  -d '{"query": "mutation { verifyOtp(email: \"<EMAIL>\", otp: \"000000\") }"}'
+python .agents/skills/agent-graphql/scripts/client.py verify-otp \
+  --email "<EMAIL>" \
+  --otp "000000" \
+  [--url "http://localhost:8000"]
 ```
 
 ## Guidelines and Constraints
