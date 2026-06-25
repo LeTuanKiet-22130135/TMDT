@@ -53,18 +53,18 @@ export const Sidebar: React.FC = () => {
       <div className="mt-8 px-4">
         <p className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant/50 mb-4">Tác giả đã đăng ký</p>
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3">
+          <Link to="/author/studioarid" className="flex items-center gap-3 hover:opacity-75 transition-opacity">
             <div className="w-8 h-8 rounded-full bg-secondary-container">
               <img className="w-full h-full rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtluSThhnYoePmLDCRSU_GSBw_VfMQOONhTs6eucDvi1uYfU4rza65Lv6DBt6uciYczZ_bd5vRt2l6I24Q7fwuYsCKfmcLlvVF2KV1VhuJefl8tRYscgLUqaMUsxLIoQLrUigKjfzEk_jMC6wMh9Y_Mgb-drl2_Liexezmv9Yn2VGaM39HcuzwTEFej7TkDTsJtso_iN_a2bxozXFhwrev1ozNole7eA-wFH4Zf9398W91JQ0AMxWkUednwnLrNNUE9KbtqIzSlgMg" alt="Studio Arid" />
             </div>
             <span className="text-xs font-semibold">Studio Arid</span>
-          </div>
-          <div className="flex items-center gap-3">
+          </Link>
+          <Link to="/author/elenav" className="flex items-center gap-3 hover:opacity-75 transition-opacity">
             <div className="w-8 h-8 rounded-full bg-tertiary-container">
-              <img className="w-full h-full rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJcjaFmuI06E2-7RyXXIWRgu0pKEvl_fyyWOEeyR8mli5DQG8Uws5CnhZwAKSicULujuUboDm2JjWQYcysyRZ5VOXloklP7R4Z9M9AqDhWfrefpdnufffJ3l2lYlRZ20JxHnagMBBgbfrcfAGR2nbwsRd2VJ3O5arbx4KcTx_6wHfglqmwEeCHF_lVvjjIZs-gxmSIDTq7nXchKPLOedlmYrH9T-HEoTVSuS50ZJVYy7YHbFpijGN24pFDx_8uqWhpVNzAGY1BFjrk" alt="Elena V." />
+              <img className="w-full h-full rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCgjenSZvmWQAHLKLu_fM4v9SZRZ5DPygvM4mF4-TlaoifBbIrtbx7MeVFpDB2CgAiBf6Olwz4ICP4Plwu_0wfr6r-N-ww-oFnsUeOMkWFCZ156VXAI6-zoqaMlPVQ1cxNZRWipMYMI9hvlB-aSrTz6cDJdt8v8cD9ZCeRcDBa5cSyGFLiMuffdtl8AbMa4HtDhvfdC3NwkAjOw2DAoum7ndBfvubfjy3t0mN2xPJZoRVeP1VS6yiFtETW8eVGimEItoeJTxP4ONZFz" alt="Elena V." />
             </div>
             <span className="text-xs font-semibold">Elena V.</span>
-          </div>
+          </Link>
         </div>
       </div>
 

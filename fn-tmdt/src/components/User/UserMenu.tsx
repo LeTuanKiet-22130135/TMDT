@@ -2,9 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Settings, LogOut, Package, User, Store } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useUserProfile } from '../../contexts/UserProfileContext';
 
 export const UserMenu: React.FC = () => {
   const { t } = useTranslation();
+  const { profile } = useUserProfile();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -33,25 +35,32 @@ export const UserMenu: React.FC = () => {
         <img
           alt="Avatar"
           className="w-full h-full object-cover"
-          src="https://ui-avatars.com/api/?name=User&background=ffafb1&color=db2e50"
+          src={profile.avatar}
         />
       </button>
 
       {isOpen && (
         <div className="absolute right-0 mt-3 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-[100] animate-in fade-in zoom-in-95 duration-200 origin-top-right">
           {/* User Card Header */}
-          <div className="relative h-24 bg-gradient-to-r from-[#ffafb1] to-[#9AC6FF]">
+          <div
+            className="relative h-24"
+            style={
+              profile.banner
+                ? { backgroundImage: `url(${profile.banner})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                : { background: 'linear-gradient(to right, #ffafb1, #9AC6FF)' }
+            }
+          >
             <div className="absolute -bottom-6 left-6 w-16 h-16 rounded-full border-4 border-white overflow-hidden bg-white shadow-sm">
               <img
                 alt="Avatar"
                 className="w-full h-full object-cover"
-                src="https://ui-avatars.com/api/?name=User&background=ffafb1&color=db2e50"
+                src={profile.avatar}
               />
             </div>
           </div>
           <div className="pt-8 pb-4 px-6 border-b border-gray-100">
-            <h3 className="font-bold text-lg text-[#040316]">Người Dùng</h3>
-            <p className="text-sm text-gray-500">user@example.com</p>
+            <h3 className="font-bold text-lg text-[#040316]">{profile.displayName}</h3>
+            <p className="text-sm text-gray-500">{profile.email}</p>
           </div>
 
           {/* Menu Items */}

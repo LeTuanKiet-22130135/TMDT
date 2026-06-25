@@ -48,9 +48,9 @@ export const ProductDetailPage: React.FC = () => {
   const formattedPrice = asset.price.toLocaleString('vi-VN');
 
   return (
-    <div className="bg-surface font-body text-on-surface antialiased min-h-screen flex flex-col">
+    <div className="bg-surface font-body text-on-surface antialiased h-screen flex flex-col overflow-hidden">
       <Header />
-      <div className="flex flex-1 min-h-screen">
+      <div className="flex flex-1 overflow-hidden min-h-0">
         <Sidebar />
         <main className="flex-1 p-6 md:p-12 overflow-y-auto max-w-6xl mx-auto w-full">
           
@@ -242,17 +242,20 @@ export const ProductDetailPage: React.FC = () => {
 
               {/* Thẻ tác giả */}
               <div className="bg-[#FFF1F3] border border-[#FFD9E0] rounded-2xl p-4 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <img 
-                    src={asset.authorAvatar} 
-                    alt={asset.author} 
+                <Link
+                  to={`/author/${asset.authorHandle.replace('@', '')}`}
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                >
+                  <img
+                    src={asset.authorAvatar}
+                    alt={asset.author}
                     className="w-12 h-12 rounded-full object-cover border-2 border-white"
                   />
                   <div>
                     <h4 className="font-bold text-sm leading-tight">{asset.author}</h4>
                     <p className="text-xs text-on-surface-variant/75 mt-0.5">{asset.authorHandle} • {asset.authorFollowers}</p>
                   </div>
-                </div>
+                </Link>
                 <button
                   onClick={handleFollowClick}
                   className={`px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm ${

@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "type": "command",
+        "command": "uv run .agent/skills/hook.py",
+        "timeout": 5
+      }
+    ]
+  }
+}

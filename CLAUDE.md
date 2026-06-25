@@ -1,117 +1,101 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+**Lumine** — e-commerce digital assets (illustrations, Live2D). Monorepo.
 
-## Project
-
-**Lumine** — e-commerce platform for digital assets (illustrations, Live2D models). Monorepo with separate frontend, admin panel, and two backends.
-
-## Monorepo layout
-
+## Layout
 ```
-fn-tmdt/     # User-facing React frontend (port 5173)
-fn-admin/    # Admin panel React frontend (port 5174)
-bk-tmdt/     # Main FastAPI + GraphQL + PostgreSQL backend (port 8000)
-bk-cacao/    # AI search/recommendation backend — FastAPI + LangChain + FAISS (port 8001)
-docs/        # architecture.md — keep this updated when adding services/models
+fn-tmdt/    # React frontend (5173)
+fn-admin/   # Admin React (5174)
+bk-tmdt/    # FastAPI + GraphQL + PostgreSQL (8000)
+bk-cacao/   # AI search — LangChain + FAISS (8001)
+docs/       # architecture.md — update when adding services/models
 ```
 
 ## Commands
 
-### Frontend (fn-tmdt or fn-admin)
+**Frontend** (fn-tmdt or fn-admin)
 ```bash
-cd fn-tmdt   # or fn-admin
 npm install
-npm run dev         # dev server
-npm run build       # tsc -b && vite build
-npm run lint        # eslint
-npm test            # vitest (run all)
-npx vitest run src/pages/SomePage.test.tsx   # single test file
+npm run dev
+npm run build    # tsc -b && vite build
+npm run lint
+npm test         # vitest
+npx vitest run src/pages/SomePage.test.tsx
 ```
 
-### Backend (bk-tmdt)
+**bk-tmdt**
 ```bash
-cd bk-tmdt
-uv sync                              # install deps (uses uv)
-# OR: pip install -r requirements.txt
-
-# Run
+uv sync
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-
-# Migrations — required after any model change
 alembic upgrade head
 alembic revision --autogenerate -m "describe change"
-
-# Tests (use SQLite in-memory, no DB needed)
 python -m pytest tests/ -q
-python -m pytest tests/test_sprint3.py tests/test_sprint4.py -q
-
-# Seed sample data
 python seed.py
 ```
 
-### Backend (bk-cacao)
+**bk-cacao**
 ```bash
-cd bk-cacao
 uv sync
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### Docker (full stack)
+**Docker**
 ```bash
-docker compose up          # production
-docker compose -f docker-compose.dev.yml up   # dev
+docker compose up
+docker compose -f docker-compose.dev.yml up
 ```
 
 ## Architecture
 
-### API contract
-- GraphQL (Strawberry) is the **primary** API. All frontend↔backend data fetching goes through `/graphql`.
-- REST at `/api/v1/*` handles auth flows, file uploads, payment webhooks, and other non-query operations.
-- Frontend Apollo client reads token from `localStorage.access_token` and sends `Authorization: Bearer`.
+**API:** GraphQL (Strawberry) primary — all data via `/graphql`. REST `/api/v1/*` for auth/uploads/webhooks. Frontend reads `localStorage.access_token` → `Authorization: Bearer`.
 
-### bk-tmdt layers
+**bk-tmdt layers:**
 ```
-app/models/entities.py      # SQLAlchemy ORM models
-app/graphql/types.py        # Strawberry GraphQL types + Connection types
-app/graphql/schema.py       # Query resolvers
-app/graphql/mutations.py    # Mutation resolvers
-app/crud/                   # DB query functions (called by resolvers)
-app/api/                    # REST route handlers
-app/schemas/                # Pydantic request/response schemas
+app/models/entities.py     # SQLAlchemy ORM
+app/graphql/types.py       # Strawberry types + Connection types
+app/graphql/schema.py      # Query resolvers
+app/graphql/mutations.py   # Mutation resolvers
+app/crud/                  # DB queries
+app/api/                   # REST handlers
+app/schemas/               # Pydantic schemas
 ```
-Always use SQLAlchemy ORM — avoid raw SQL. If raw SQL is unavoidable, add a comment explaining why.
+Use SQLAlchemy ORM. Raw SQL only if unavoidable — add comment why.
 
-### bk-cacao
-AI search service using LangChain + Ollama + FAISS vector store + Strawberry GraphQL. Handles semantic product search and recommendations.
+**bk-cacao:** LangChain + Ollama + FAISS + Strawberry GraphQL. Semantic search + recommendations.
 
-### fn-tmdt / fn-admin pattern
-- Business logic lives in `.logic.ts` files alongside pages — never inside components.
-- Mock API data in `.logic.ts` when backend endpoint isn't ready.
-- State via React Context only (no Redux/Zustand).
-- `CartContext` at `src/contexts/CartContext.tsx`.
-- Admin auth context at `fn-admin/src/lib/auth.tsx` — guards routes to `role=admin` only.
+**fn-tmdt / fn-admin:**
+- Logic in `.logic.ts` beside pages — never in components
+- Mock API in `.logic.ts` when backend not ready
+- State: React Context only (no Redux/Zustand)
+- `CartContext` → `src/contexts/CartContext.tsx`
+- Admin auth → `fn-admin/src/lib/auth.tsx` (role=admin only)
 
-### Design tokens (fn-tmdt)
-| Token | Value |
-|---|---|
-| Main | `#FFC9D2` |
-| Accent | `#F65C88` |
-| Background | `#FBFBFE` |
-| Text | `#040316` |
-| Prominent button gradient | `#FF9FB1` → `#DB2E50` |
+**Design tokens (fn-tmdt):**
+- Main `#FFC9D2` · Accent `#F65C88` · BG `#FBFBFE` · Text `#040316`
+- Button gradient `#FF9FB1` → `#DB2E50`
+- Min padding: 5 units. Style: Modern & Minimalist.
 
-Min padding: `5` spacing units. Style: Modern & Minimalist.
+**DB:** PostgreSQL + pgvector (`pgvector/pgvector:pg16`). pgAdmin port 5050. Every model change needs Alembic migration.
 
-### Database
-- PostgreSQL with `pgvector` extension (image: `pgvector/pgvector:pg16`)
-- pgAdmin at port 5050 (local dev)
-- Every model change requires a new Alembic migration before merging.
+## Project Skills
 
-## Key rules
+Skills live in `.agent/skills/<name>/SKILL.md`. Hook auto-injects index each prompt.
 
-- All commits go to `dev` branch. Merge to `main` only when verified working.
-- Always use GraphQL for frontend↔backend communication.
-- Always update `docs/architecture.md` when adding services, models, or significant structural changes.
-- New services must include a `Dockerfile`.
-- **Never commit to Gitea. Do not use or modify Gitea workflows.**
+Use skill: read `.agent/skills/<name>/SKILL.md`, follow instructions.
+
+Add skill: create `.agent/skills/<name>/SKILL.md`:
+```
+---
+name: skill-name
+description: One-line summary
+---
+```
+Auto-detected next prompt. No registration needed.
+
+## Rules
+
+- Commits → `dev`. Merge `main` only when verified.
+- GraphQL for all frontend↔backend data.
+- Update `docs/architecture.md` when adding services/models/structure.
+- New services need `Dockerfile`.
+- **Never commit to Gitea. Never touch Gitea workflows.**
