@@ -1,79 +1,112 @@
-import strawberry
+from datetime import datetime
 from typing import List, Optional
-from sqlalchemy.orm import Session
-from app import models, database
+from uuid import UUID
+
+import strawberry
+
 from app.agent import ask_agent, extract_search_query
+from app.database import get_db
+from app.models import Product, Store, User
 from app.vector_store import add_product_to_vector_store, search_similar_product_ids
 
-async def get_context():
-    db = database.SessionLocal()
-    try:
-        yield {"db": db}
-    finally:
-        db.close()
 
 @strawberry.type
-class ProductType:
-    id: int
+class SuggestionProduct:
+    id: str
     name: str
     price: float
-    description: Optional[str]
+    image_url: str
+    tags: List[str]
+    license_type: str
+    author_name: str
+    author_avatar: Optional[str]
+    author_shortlink: str
+    created_at: Optional[datetime]
+
+
+def _build_suggestion(product: Product, user: User) -> SuggestionProduct:
+    urls = product.image_urls or []
+    tags = list(product.user_tags or []) + list(product.ai_tags or [])
+    return SuggestionProduct(
+        id=str(product.id),
+        name=product.name,
+        price=float(product.price),
+        image_url=urls[0] if urls else "",
+        tags=tags,
+        license_type=product.license_type or "",
+        author_name=user.full_name,
+        author_avatar=user.avatar_url,
+        author_shortlink=user.shortlink or "",
+        created_at=product.created_at,
+    )
+
 
 @strawberry.type
 class Query:
     @strawberry.field
-    def hello(self) -> str:
-        return "Hello World"
+    def suggestions(self, offset: int = 0, limit: int = 20) -> List[SuggestionProduct]:
+        limit = min(limit, 100)
+        with get_db() as db:
+            rows = (
+                db.query(Product, Store, User)
+                .join(Store, Product.store_id == Store.id)
+                .join(User, Store.owner_id == User.id)
+                .filter(Product.is_active == True)
+                .order_by(Product.created_at.desc())
+                .offset(offset)
+                .limit(limit)
+                .all()
+            )
+        return [_build_suggestion(p, u) for p, _s, u in rows]
 
     @strawberry.field
-    def get_products(self, info: strawberry.Info) -> List[ProductType]:
-        db: Session = info.context["db"]
-        products = db.query(models.Product).all()
-        return [ProductType(id=p.id, name=p.name, price=p.price, description=p.description) for p in products]
+    def suggestions_count(self) -> int:
+        with get_db() as db:
+            return db.query(Product).filter(Product.is_active == True).count()
 
     @strawberry.field
-    def search_products_by_ai(self, info: strawberry.Info, prompt: str) -> List[ProductType]:
-        """
-        API này dùng LLM để trích xuất tham số từ prompt tiếng Anh,
-        sau đó truy vấn Database. Thay vì dùng ilike, nó dùng Similar Search (FAISS).
-        """
-        search_params = extract_search_query(prompt)
-        
-        db: Session = info.context["db"]
-        query = db.query(models.Product)
-        
-        # Nếu LLM tìm ra keyword về tên sản phẩm, dùng Semantic Search
-        if search_params.name:
-            similar_ids = search_similar_product_ids(search_params.name, k=5)
-            if not similar_ids:
-                return []
-            query = query.filter(models.Product.id.in_(similar_ids))
-            
-        if search_params.min_price is not None:
-            query = query.filter(models.Product.price >= search_params.min_price)
-        if search_params.max_price is not None:
-            query = query.filter(models.Product.price <= search_params.max_price)
-            
-        products = query.all()
-        return [ProductType(id=p.id, name=p.name, price=p.price, description=p.description) for p in products]
+    def search_products_by_ai(self, prompt: str) -> List[SuggestionProduct]:
+        params = extract_search_query(prompt)
+
+        with get_db() as db:
+            query = (
+                db.query(Product, Store, User)
+                .join(Store, Product.store_id == Store.id)
+                .join(User, Store.owner_id == User.id)
+                .filter(Product.is_active == True)
+            )
+
+            if params.name:
+                similar_ids = search_similar_product_ids(params.name, k=10)
+                if similar_ids:
+                    uuids = [UUID(sid) for sid in similar_ids if _is_valid_uuid(sid)]
+                    query = query.filter(Product.id.in_(uuids))
+                else:
+                    query = query.filter(Product.name.ilike(f"%{params.name}%"))
+
+            if params.min_price is not None:
+                query = query.filter(Product.price >= params.min_price)
+            if params.max_price is not None:
+                query = query.filter(Product.price <= params.max_price)
+
+            rows = query.limit(20).all()
+
+        return [_build_suggestion(p, u) for p, _s, u in rows]
+
 
 @strawberry.type
 class Mutation:
     @strawberry.mutation
-    def add_product(self, info: strawberry.Info, name: str, description: str, price: float = 0.0) -> ProductType:
-        db: Session = info.context["db"]
-        new_product = models.Product(name=name, description=description, price=price)
-        db.add(new_product)
-        db.commit()
-        db.refresh(new_product)
-        
-        # Thêm vào Vector Store để tìm kiếm sau này
-        add_product_to_vector_store(new_product.id, new_product.name, new_product.description)
-        
-        return ProductType(id=new_product.id, name=new_product.name, price=new_product.price, description=new_product.description)
-
-    @strawberry.mutation
     def ask_ai(self, prompt: str) -> str:
         return ask_agent(prompt)
+
+
+def _is_valid_uuid(val: str) -> bool:
+    try:
+        UUID(val)
+        return True
+    except ValueError:
+        return False
+
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)

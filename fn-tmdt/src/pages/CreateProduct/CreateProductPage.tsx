@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Layers, AlignLeft, Tag, Wrench, FileType,
   BadgeDollarSign, Scale, Eye, ChevronDown, Check, Send,
-  Save,
+  Save, CheckCircle2,
 } from 'lucide-react';
 import { Header } from '../../components/layout/Header';
 import { FileUploadZone } from './components/FileUploadZone';
@@ -11,7 +11,8 @@ import { PreviewImagesUpload } from './components/PreviewImagesUpload';
 import { TagInput } from './components/TagInput';
 import {
   initialFormData, validateForm, formatPrice,
-  CATEGORIES, LICENSES, SOFTWARES, FILE_FORMATS,
+  LICENSES, SOFTWARES, FILE_FORMATS,
+  useCreateProduct,
   type ProductFormData, type SelectOption,
 } from './createProduct.logic';
 
@@ -86,10 +87,13 @@ const SelectField: React.FC<{
 /* ════════════════════════════════════════ */
 
 export const CreateProductPage: React.FC = () => {
+  const { submitProduct, loading: submitting } = useCreateProduct();
+
   const [form, setForm] = useState<ProductFormData>(initialFormData());
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [isDraft, setIsDraft] = useState(false);
+  const [successId, setSuccessId] = useState<string | null>(null);
 
   const set = <K extends keyof ProductFormData>(key: K, value: ProductFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -105,14 +109,45 @@ export const CreateProductPage: React.FC = () => {
       if (Object.keys(errs).length) { setErrors(errs); return; }
     }
     setErrors({});
-    setIsSubmitting(true);
+    setSubmitError(null);
     setIsDraft(draft);
-    // TODO: gọi API submit
-    await new Promise((r) => setTimeout(r, 1200));
-    setIsSubmitting(false);
+    try {
+      const id = await submitProduct(form);
+      setSuccessId(id);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Đã xảy ra lỗi. Vui lòng thử lại.');
+    }
   };
 
   const charCount = form.title.length;
+
+  if (successId) {
+    return (
+      <div className="min-h-screen bg-[#FBFBFE] flex items-center justify-center">
+        <div className="text-center max-w-sm px-6">
+          <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 size={32} className="text-emerald-500" />
+          </div>
+          <h2 className="text-xl font-extrabold text-[#040316] mb-2">Đăng sản phẩm thành công!</h2>
+          <p className="text-sm text-[#040316]/50 mb-2">
+            AI đang gắn nhãn ảnh của bạn trong nền. Các nhãn AI sẽ xuất hiện sau vài giây.
+          </p>
+          <p className="text-xs text-[#040316]/30 mb-6">ID: {successId}</p>
+          <div className="flex gap-3 justify-center">
+            <Link to="/" className="px-5 py-2 rounded-full text-sm font-semibold border border-[#FFC9D2] text-[#040316]/70 hover:bg-[#FFC9D2]/10 transition-colors">
+              Về trang chủ
+            </Link>
+            <button
+              onClick={() => { setSuccessId(null); setForm(initialFormData()); }}
+              className="px-5 py-2 rounded-full text-sm font-bold text-white bg-gradient-to-r from-[#FF9FB1] to-[#DB2E50]"
+            >
+              Đăng thêm
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FBFBFE]">
@@ -309,20 +344,9 @@ export const CreateProductPage: React.FC = () => {
               </div>
             </Section>
 
-            {/* Category */}
-            <Section icon={<Layers size={16} />} title="Danh mục & Giấy phép">
+            {/* License */}
+            <Section icon={<Layers size={16} />} title="Giấy phép">
               <div className="flex flex-col gap-3">
-                <div>
-                  <Label text="Danh mục" required />
-                  <SelectField
-                    value={form.categoryId}
-                    onChange={(v) => set('categoryId', v)}
-                    options={CATEGORIES}
-                    placeholder="Chọn danh mục..."
-                    error={errors.categoryId}
-                  />
-                </div>
-
                 <div>
                   <Label text="Giấy phép sử dụng" required />
                   <SelectField
@@ -368,15 +392,22 @@ export const CreateProductPage: React.FC = () => {
               </div>
             )}
 
+            {/* Submit error */}
+            {submitError && (
+              <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-600">
+                {submitError}
+              </div>
+            )}
+
             {/* Publish actions */}
             <div className="flex flex-col gap-2.5">
               <button
                 type="button"
                 onClick={() => handleSubmit(false)}
-                disabled={isSubmitting}
+                disabled={submitting}
                 className="w-full py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-[#FF9FB1] to-[#DB2E50] shadow-md hover:shadow-lg hover:opacity-95 active:scale-[0.98] transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {isSubmitting && !isDraft ? (
+                {submitting && !isDraft ? (
                   <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 ) : (
                   <Send size={15} />
@@ -387,10 +418,10 @@ export const CreateProductPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleSubmit(true)}
-                disabled={isSubmitting}
+                disabled={submitting}
                 className="w-full py-2.5 rounded-xl text-sm font-semibold text-[#040316]/70 border border-[#FFC9D2]/60 bg-white hover:bg-[#FFC9D2]/10 hover:border-[#F65C88]/40 active:scale-[0.98] transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {isSubmitting && isDraft ? (
+                {submitting && isDraft ? (
                   <span className="w-4 h-4 border-2 border-[#040316]/20 border-t-[#040316]/60 rounded-full animate-spin" />
                 ) : (
                   <Save size={15} />

@@ -6,7 +6,10 @@ from langchain_core.documents import Document
 
 VECTOR_STORE_PATH = "./faiss_index"
 
-# Sử dụng model HuggingFace nhẹ để tạo Vector Embeddings local
+# HF_HUB_OFFLINE=1 prevents network check on cached models
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+
 embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 def get_vector_store() -> FAISS:
@@ -24,26 +27,25 @@ def get_vector_store() -> FAISS:
     vs.save_local(VECTOR_STORE_PATH)
     return vs
 
-def add_product_to_vector_store(product_id: int, name: str, description: str):
-    """Mã hóa Tên và Mô tả sản phẩm, sau đó lưu vào FAISS."""
+def add_product_to_vector_store(product_id: str | int, name: str, description: str):
+    """Encode product tags/name/description and store in FAISS."""
     vs = get_vector_store()
     text = f"Name: {name}. Description: {description or ''}"
-    doc = Document(page_content=text, metadata={"id": product_id})
+    doc = Document(page_content=text, metadata={"id": str(product_id)})
     vs.add_documents([doc])
     vs.save_local(VECTOR_STORE_PATH)
 
-def search_similar_product_ids(query: str, k: int = 5) -> List[int]:
-    """Tìm kiếm các sản phẩm tương đồng và trả về danh sách ID."""
+def search_similar_product_ids(query: str, k: int = 5) -> List[str]:
+    """Search similar products and return list of product IDs (UUID strings)."""
     vs = get_vector_store()
-    # Tìm kiếm theo thuật toán Cosine Similarity / L2
     results = vs.similarity_search(query, k=k)
-    
+
     product_ids = []
     for doc in results:
-        pid = doc.metadata.get("id", -1)
-        if pid != -1:
-            product_ids.append(pid)
-            
+        pid = doc.metadata.get("id")
+        if pid and pid != "-1":
+            product_ids.append(str(pid))
+
     return product_ids
 
 def reset_vector_store():

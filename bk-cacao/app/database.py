@@ -1,15 +1,15 @@
+import os
+from contextlib import contextmanager
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+DB_URL = os.getenv("TMDT_DB_URL", "postgresql+psycopg2://postgres:123@localhost:5432/tmdt")
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = create_engine(DB_URL, pool_pre_ping=True)
+SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
-Base = declarative_base()
 
+@contextmanager
 def get_db():
     db = SessionLocal()
     try:

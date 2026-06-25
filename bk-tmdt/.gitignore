@@ -3,3 +3,6 @@ __pycache__/
 .pytest_cache/
 .venv/
 *.pyc
+uploads/
+uploads_*/
+*.tar.gz

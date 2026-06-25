@@ -81,7 +81,10 @@ def pg_enum(enum_class: type[Enum], name: str) -> PGEnum:
 
 class User(Base, TimestampMixin):
     __tablename__ = "users"
-    __table_args__ = (Index("ix_users_email", "email"),)
+    __table_args__ = (
+        Index("ix_users_email", "email"),
+        Index("ix_users_shortlink", "shortlink", unique=True),
+    )
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
@@ -91,11 +94,17 @@ class User(Base, TimestampMixin):
     role: Mapped[RoleEnum] = mapped_column(pg_enum(RoleEnum, "role_enum"), nullable=False, default=RoleEnum.BUYER)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     avatar_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    banner_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    bio: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    specialties: Mapped[list] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=list, server_default=text("'[]'::jsonb"))
+    social_links: Mapped[dict] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=dict, server_default=text("'{}'::jsonb"))
     phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     reward_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=text("true"))
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
+    is_gold: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
+    shortlink: Mapped[Optional[str]] = mapped_column(String(32), unique=True, nullable=True)
     verification_otp: Mapped[Optional[str]] = mapped_column(String(6), nullable=True)
     verification_otp_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -150,7 +159,7 @@ class Product(Base, TimestampMixin):
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     store_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("stores.id", ondelete="CASCADE"), nullable=False)
-    category_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("categories.id", ondelete="RESTRICT"), nullable=False)
+    category_id: Mapped[Optional[UUID]] = mapped_column(PGUUID(as_uuid=True), ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
@@ -159,6 +168,12 @@ class Product(Base, TimestampMixin):
     view_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
     brand: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     image_urls: Mapped[list[str]] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=list)
+    main_file_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    license_type: Mapped[str] = mapped_column(String(50), nullable=False, default="personal", server_default=text("'personal'"))
+    user_tags: Mapped[list] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=list, server_default=text("'[]'::jsonb"))
+    ai_tags: Mapped[list] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=list, server_default=text("'[]'::jsonb"))
+    software_tags: Mapped[list] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=list, server_default=text("'[]'::jsonb"))
+    format_tags: Mapped[list] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=list, server_default=text("'[]'::jsonb"))
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=text("true"))
 
     store: Mapped[Store] = relationship(back_populates="products")

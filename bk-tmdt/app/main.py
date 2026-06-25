@@ -3,6 +3,7 @@ import sys
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 
 if __package__ is None or __package__ == "":
@@ -18,7 +19,12 @@ from app.api.v1.seller import router as seller_router
 from app.api.v1.social import router as social_router
 from app.api.v1.products import router as products_router
 from app.api.v1.stores import router as stores_router
+from app.api.v1.uploads import router as uploads_router
+from app.api.v1.internal import router as internal_router
 from app.graphql import graphql_router
+
+UPLOAD_DIR = Path(__file__).resolve().parents[1] / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 app = FastAPI(title=settings.app_name)
@@ -40,7 +46,10 @@ app.include_router(admin_router, prefix=f"{settings.api_v1_prefix}/admin", tags=
 app.include_router(seller_router, prefix=f"{settings.api_v1_prefix}/seller", tags=["seller"])
 app.include_router(stores_router, prefix=f"{settings.api_v1_prefix}/stores", tags=["stores"])
 app.include_router(products_router, prefix=f"{settings.api_v1_prefix}/products", tags=["products"])
+app.include_router(uploads_router, prefix=f"{settings.api_v1_prefix}/uploads", tags=["uploads"])
+app.include_router(internal_router, prefix=f"{settings.api_v1_prefix}/internal", tags=["internal"])
 app.include_router(graphql_router, prefix="/graphql", tags=["graphql"])
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 
 if __name__ == "__main__":

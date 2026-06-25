@@ -49,7 +49,7 @@ const readonlyCls =
 export const ProfileEditPage: React.FC = () => {
   const {
     draft, setDraft, isSaving, saved, errors,
-    profile, handleAvatarChange, handleBannerChange, removeBanner, handleSubmit,
+    profile, loading, handleAvatarChange, handleBannerChange, removeBanner, handleSubmit,
   } = useProfileEditor();
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -80,6 +80,17 @@ export const ProfileEditPage: React.FC = () => {
     }
     setCropTarget(null);
   };
+
+  if (loading) {
+    return (
+      <div className="bg-surface font-body text-on-surface antialiased h-screen flex flex-col overflow-hidden">
+        <Header />
+        <div className="flex flex-1 items-center justify-center">
+          <Loader2 size={32} className="animate-spin text-[#F65C88]" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-surface font-body text-on-surface antialiased h-screen flex flex-col overflow-hidden">

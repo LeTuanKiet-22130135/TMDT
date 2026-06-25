@@ -1,0 +1,12 @@
+[project]
+name = "db-tools"
+version = "0.1.0"
+description = "TMDT database & file storage backup/restore tool"
+requires-python = ">=3.12"
+dependencies = [
+    "python-dotenv>=1.2.2",
+    "typer>=0.26.7",
+]
+
+[project.scripts]
+tmdt-tools = "main:app"

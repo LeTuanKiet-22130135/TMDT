@@ -1,90 +1,79 @@
 import os
-from typing import List, Optional
+from typing import Optional
+
 from dotenv import load_dotenv
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.tools import tool
+from langchain_ollama import ChatOllama
+from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel, Field
 
-from langchain_ollama import ChatOllama
-from langchain_core.tools import tool
-from langchain_core.prompts import ChatPromptTemplate
-from langgraph.prebuilt import create_react_agent
-from app.database import SessionLocal
+from app.database import get_db
 from app.models import Product
 
-load_dotenv(".env.test")
+load_dotenv()
 
-ollama_base_url = os.getenv("OLLAMA_API", "http://localhost:11434")
-ollama_model = os.getenv("MODEL", "llama3")
-ollama_api_key = os.getenv("OLLAMA_API_KEY", None)
+_OLLAMA_URL = os.getenv("OLLAMA_API", "http://localhost:11434")
+_MODEL = os.getenv("MODEL", "llama3")
+_API_KEY = os.getenv("OLLAMA_API_KEY")
 
-client_kwargs = {}
-if ollama_api_key:
-    client_kwargs["headers"] = {"Authorization": f"Bearer {ollama_api_key}"}
+_llm = None
+_agent_executor = None
 
-llm = ChatOllama(
-    base_url=ollama_base_url,
-    model=ollama_model,
-    client_kwargs=client_kwargs if client_kwargs else None,
-)
 
-# ----------------- PHẦN 1: Tool Calling Agent (Cũ) -----------------
+def _get_llm() -> ChatOllama:
+    global _llm
+    if _llm is None:
+        kwargs = {"headers": {"Authorization": f"Bearer {_API_KEY}"}} if _API_KEY else {}
+        _llm = ChatOllama(base_url=_OLLAMA_URL, model=_MODEL, client_kwargs=kwargs or None)
+    return _llm
+
+
+def _get_agent():
+    global _agent_executor
+    if _agent_executor is None:
+        _agent_executor = create_react_agent(_get_llm(), [search_products])
+    return _agent_executor
+
+
 @tool
 def search_products(keyword: str) -> str:
-    """
-    Sử dụng công cụ này để tìm kiếm thông tin về sản phẩm trong cơ sở dữ liệu dựa trên từ khóa.
-    Tham số `keyword` là tên sản phẩm cần tìm.
-    Trả về thông tin dạng chuỗi của các sản phẩm trùng khớp.
-    """
-    db = SessionLocal()
-    try:
-        products = db.query(Product).filter(Product.name.ilike(f"%{keyword}%")).all()
-        if not products:
-            return "Không tìm thấy sản phẩm nào phù hợp với từ khóa này."
-        
-        result = "Các sản phẩm tìm thấy:\n"
-        for p in products:
-            result += f"- ID: {p.id}, Tên: {p.name}, Giá: {p.price}, Mô tả: {p.description}\n"
-        return result
-    except Exception as e:
-        return f"Lỗi truy vấn cơ sở dữ liệu: {str(e)}"
-    finally:
-        db.close()
+    """Tìm kiếm sản phẩm trong cơ sở dữ liệu theo từ khóa tên."""
+    with get_db() as db:
+        products = db.query(Product).filter(
+            Product.name.ilike(f"%{keyword}%"),
+            Product.is_active == True,
+        ).limit(10).all()
 
-tools = [search_products]
+    if not products:
+        return "Không tìm thấy sản phẩm nào phù hợp."
 
-# Thay thế AgentExecutor (bị xóa ở bản mới) bằng LangGraph create_react_agent
-agent_executor = create_react_agent(llm, tools)
+    lines = [f"- ID: {p.id}, Tên: {p.name}, Giá: {p.price}" for p in products]
+    return "Sản phẩm tìm thấy:\n" + "\n".join(lines)
+
 
 def ask_agent(user_prompt: str) -> str:
     try:
-        messages = [{"role": "user", "content": user_prompt}]
-        response = agent_executor.invoke({"messages": messages})
+        response = _get_agent().invoke({"messages": [{"role": "user", "content": user_prompt}]})
         return response["messages"][-1].content
     except Exception as e:
-        print(f"Agent error: {e}")
-        return f"Agent Error: {str(e)}"
+        return f"Agent error: {e}"
 
-# ----------------- PHẦN 2: Query Extraction API (Mới) -----------------
+
 class ProductSearchQuery(BaseModel):
-    """Search parameters extracted from user query."""
-    name: Optional[str] = Field(default=None, description="The name or keyword of the product to search for. Leave null if not specified.")
-    min_price: Optional[float] = Field(default=None, description="The minimum price of the product. Leave null if not specified.")
-    max_price: Optional[float] = Field(default=None, description="The maximum price of the product. Leave null if not specified.")
+    name: Optional[str] = Field(default=None, description="Product name/keyword to search for.")
+    min_price: Optional[float] = Field(default=None, description="Minimum price filter.")
+    max_price: Optional[float] = Field(default=None, description="Maximum price filter.")
+
 
 def extract_search_query(user_prompt: str) -> ProductSearchQuery:
-    """
-    Extract search parameters from an English user prompt.
-    """
-    extraction_prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are an expert data extraction assistant. Extract search parameters for products based on the user's input. The parameters include 'name', 'min_price', and 'max_price'. If a parameter is not mentioned, leave it null."),
-        ("human", "{input}")
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "Extract product search parameters (name, min_price, max_price) from the user input. Leave fields null if not mentioned."),
+        ("human", "{input}"),
     ])
-    structured_llm = llm.with_structured_output(ProductSearchQuery)
-    chain = extraction_prompt | structured_llm
-    
     try:
-        result = chain.invoke({"input": user_prompt})
-        print(result)
-        return result
+        chain = prompt | _get_llm().with_structured_output(ProductSearchQuery)
+        return chain.invoke({"input": user_prompt})
     except Exception as e:
-        print(f"Extraction error: {e}")
+        print(f"[extract_search_query] {e}")
         return ProductSearchQuery()

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useUserProfile } from '../../contexts/UserProfileContext';
 
 export interface ProfileDraft {
@@ -10,8 +10,24 @@ export interface ProfileDraft {
   bannerPreview: string | null;
 }
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
+async function uploadImage(file: File): Promise<string> {
+  const token = localStorage.getItem('access_token');
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch(`${API_BASE}/api/v1/uploads/image`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+  const json = await res.json();
+  return `${API_BASE}${json.url}`;
+}
+
 export const useProfileEditor = () => {
-  const { profile, updateProfile } = useUserProfile();
+  const { profile, loading, updateProfile } = useUserProfile();
 
   const [draft, setDraft] = useState<ProfileDraft>({
     displayName: profile.displayName,
@@ -21,6 +37,21 @@ export const useProfileEditor = () => {
     avatarPreview: profile.avatar,
     bannerPreview: profile.banner,
   });
+
+  const [initialized, setInitialized] = useState(false);
+  useEffect(() => {
+    if (!loading && profile.id && !initialized) {
+      setDraft({
+        displayName: profile.displayName,
+        bio: profile.bio,
+        specialties: [...profile.specialties],
+        socialLinks: { ...profile.socialLinks },
+        avatarPreview: profile.avatar,
+        bannerPreview: profile.banner,
+      });
+      setInitialized(true);
+    }
+  }, [loading, profile.id, initialized]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -57,33 +88,32 @@ export const useProfileEditor = () => {
     if (!validate(draft)) return;
     setIsSaving(true);
     try {
-      // TODO: when backend ready, upload files first then call mutation:
-      // const avatarUrl = avatarFileRef.current
-      //   ? await uploadFile('/api/v1/uploads', avatarFileRef.current)
-      //   : profile.avatar;
-      // const bannerUrl = bannerFileRef.current
-      //   ? await uploadFile('/api/v1/uploads', bannerFileRef.current)
-      //   : profile.banner;
-      // await apolloClient.mutate({
-      //   mutation: UPDATE_PROFILE,
-      //   variables: { input: { displayName: draft.displayName, bio: draft.bio,
-      //     specialties: draft.specialties, socialLinks: draft.socialLinks,
-      //     avatar: avatarUrl, banner: bannerUrl } },
-      // });
+      const avatarUrl = avatarFileRef.current
+        ? await uploadImage(avatarFileRef.current)
+        : undefined;
+      const bannerUrl = bannerFileRef.current
+        ? await uploadImage(bannerFileRef.current)
+        : draft.bannerPreview === null
+          ? ''  // empty string signals "remove banner"
+          : undefined;
 
-      await new Promise((r) => setTimeout(r, 600)); // prototype delay
-
-      updateProfile({
-        displayName: draft.displayName,
+      await updateProfile({
+        fullName: draft.displayName,
         bio: draft.bio,
         specialties: draft.specialties,
-        socialLinks: draft.socialLinks,
-        avatar: draft.avatarPreview,
-        banner: draft.bannerPreview,
+        ...(avatarUrl !== undefined && { avatarUrl }),
+        ...(bannerUrl !== undefined && { bannerUrl }),
+        website: draft.socialLinks.website,
+        twitter: draft.socialLinks.twitter,
+        instagram: draft.socialLinks.instagram,
       });
 
+      avatarFileRef.current = null;
+      bannerFileRef.current = null;
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error('Profile update failed:', err);
     } finally {
       setIsSaving(false);
     }
@@ -96,6 +126,7 @@ export const useProfileEditor = () => {
     saved,
     errors,
     profile,
+    loading,
     handleAvatarChange,
     handleBannerChange,
     removeBanner,

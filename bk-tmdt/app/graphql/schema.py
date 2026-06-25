@@ -21,6 +21,8 @@ from app.graphql.context import get_graphql_context
 from decimal import Decimal
 from sqlalchemy import select, func
 from app.graphql.types import (
+    AuthorType,
+    CategoryType,
     ProductConnection,
     ProductType,
     StoreConnection,
@@ -30,13 +32,15 @@ from app.graphql.types import (
     UserConnection,
     OrderConnection,
     ReportConnection,
+    to_author_type,
+    to_category_type,
     to_product_type,
     to_store_type,
     to_user_type,
     to_order_type,
     to_report_type,
 )
-from app.models import User, Order, Report, Product, Store, RoleEnum, OrderStatusEnum
+from app.models import Category, User, Order, Report, Product, Store, RoleEnum, OrderStatusEnum
 
 
 
@@ -59,11 +63,30 @@ def _current_user(info: Info) -> User | None:
 @strawberry.type
 class Query:
     @strawberry.field
+    def categories(self, info: Info) -> list[CategoryType]:
+        return [to_category_type(c) for c in _db(info).scalars(select(Category)).all()]
+
+    @strawberry.field
     def me(self, info: Info) -> UserType | None:
         user = _current_user(info)
         if user is None:
             return None
         return to_user_type(user)
+
+    @strawberry.field
+    def author(self, info: Info, shortlink: str) -> AuthorType | None:
+        user = _db(info).scalar(select(User).where(User.shortlink == shortlink, User.is_active == True))
+        if user is None:
+            return None
+        return to_author_type(user)
+
+    @strawberry.field
+    def author_products(self, info: Info, shortlink: str, page_size: int = 50) -> list[ProductType]:
+        user = _db(info).scalar(select(User).where(User.shortlink == shortlink, User.is_active == True))
+        if user is None or user.store is None:
+            return []
+        products = list_products_by_store(_db(info), user.store.id)
+        return [to_product_type(p) for p in products[:page_size]]
 
     @strawberry.field
     def product(self, info: Info, product_id: UUID) -> ProductType | None:

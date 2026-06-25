@@ -27,7 +27,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify" element={<VerificationPage />} />
-          <Route path="/author/:handle" element={<AuthorPage />} />
+          <Route path="/author/:shortlink" element={<AuthorPage />} />
           <Route path="/profile" element={<ProfileEditPage />} />
         </Routes>
       </Router>

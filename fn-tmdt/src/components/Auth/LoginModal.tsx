@@ -6,6 +6,7 @@ import { LOGIN_MUTATION } from '../../services/graphql/auth.graphql';
 import Input from './Input';
 import Button from './Button';
 import { Link } from 'react-router-dom';
+import { useUserProfile } from '../../contexts/UserProfileContext';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ interface LoginModalProps {
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { t } = useTranslation();
+  const { notifyLogin } = useUserProfile();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -23,6 +25,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
     onCompleted: (data: any) => {
       const { accessToken } = data.login;
       localStorage.setItem('access_token', accessToken);
+      notifyLogin();
       onSuccess();
       onClose();
     },

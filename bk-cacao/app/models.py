@@ -1,13 +1,34 @@
-from sqlalchemy import Column, Integer, String, Float
-from app.database import Base
+from sqlalchemy import Column, String, Float, Boolean, DateTime, Text
+from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.orm import declarative_base
+
+Base = declarative_base()
+
 
 class Product(Base):
-    """
-    Model sản phẩm để lưu trữ trong database
-    """
     __tablename__ = "products"
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    store_id = Column(UUID(as_uuid=True), nullable=False)
+    name = Column(String, nullable=False)
+    price = Column(Float, nullable=False)
+    description = Column(Text, nullable=True)
+    image_urls = Column(JSONB, nullable=False, default=list)
+    user_tags = Column(JSONB, nullable=False, default=list)
+    ai_tags = Column(JSONB, nullable=False, default=list)
+    license_type = Column(String, nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True))
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    description = Column(String, index=True)
-    price = Column(Float, default=0.0)
+
+class Store(Base):
+    __tablename__ = "stores"
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    owner_id = Column(UUID(as_uuid=True), nullable=False)
+
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    full_name = Column(String, nullable=False)
+    avatar_url = Column(Text, nullable=True)
+    shortlink = Column(String(32), nullable=True)
