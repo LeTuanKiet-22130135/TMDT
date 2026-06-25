@@ -44,7 +44,8 @@ class AuthMutation:
         db.commit()
         db.refresh(user)
 
-        background_tasks.add_task(_queue_verification_email, user.email, user.full_name, otp)
+        if not settings.test_mode:
+            background_tasks.add_task(_queue_verification_email, user.email, user.full_name, otp)
 
         return TokenType(
             access_token=create_access_token(str(user.id)),
@@ -73,7 +74,7 @@ class AuthMutation:
             raise Exception("Không tìm thấy tài khoản")
         if user.is_verified:
             return True
-        if settings.test_mode and otp == "000000":
+        if settings.test_mode and otp == "676767":
             user.is_verified = True
             user.verification_otp = None
             user.verification_otp_expires_at = None

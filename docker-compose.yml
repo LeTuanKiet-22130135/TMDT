@@ -28,6 +28,8 @@ services:
     container_name: bk-cacao
     ports:
       - "8001:8000"
+    environment:
+      - DB_URL=postgresql+psycopg2://postgres:123@db:5432/tmdt
     depends_on:
       - db
     restart: unless-stopped
