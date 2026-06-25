@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASS:-123}
       POSTGRES_DB: tmdt
     volumes:
-      - postgres_data_staging:/var/lib/postgresql/data
+      - ./volumes/postgres_data_staging:/var/lib/postgresql/data
     networks:
       - nginx-network
     restart: unless-stopped
@@ -17,6 +17,9 @@ services:
     container_name: bk-tmdt_staging
     environment:
       - DB_URL=postgresql+psycopg2://postgres:${DB_PASS:-123}@db:5432/tmdt
+      - TEST_MODE=true
+    volumes:
+      - ./volumes/uploads:/app/uploads
     depends_on:
       - db
     networks:
@@ -46,8 +49,7 @@ services:
       - nginx-network
     restart: unless-stopped
 
-volumes:
-  postgres_data_staging:
+volumes: {}
 
 networks:
   nginx-network:

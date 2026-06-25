@@ -4,7 +4,7 @@ import { Search, Settings, HelpCircle, ArrowLeft, Bell, Download, Printer, Uploa
 import { Badge } from '../components/ui/Badge';
 
 import { useCustomRequestsData } from './customRequests.logic';
-import type { Message, TicketInfo } from './customRequests.logic';
+import type { Message,  } from './customRequests.logic';
 
 export const CustomRequestsPage: React.FC = () => {
   const [activeContact, setActiveContact] = useState<'elena' | 'arid'>('elena');

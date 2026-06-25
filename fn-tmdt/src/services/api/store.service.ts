@@ -1,5 +1,5 @@
-import apiClient from './api/api.client';
-import { StoreRead, ProductRead } from './types';
+import apiClient from './api.client';
+import type { StoreRead, ProductRead } from './types';
 
 export const StoreService = {
   async searchStores(params?: any): Promise<any> {

@@ -1,7 +1,7 @@
 import { render, screen, act } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { SpriteSheetDisplay, type SpriteSheetRef } from './SpriteSheetDisplay';
-import React, { createRef } from 'react';
+import { createRef } from 'react';
 
 describe('SpriteSheetDisplay', () => {
   beforeEach(() => {

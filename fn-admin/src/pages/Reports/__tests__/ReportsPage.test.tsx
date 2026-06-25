@@ -49,7 +49,7 @@ const mocks = [
 describe("ReportsPage", () => {
   it("renders reports page with table and resolve button", async () => {
     render(
-      <MockedProvider mocks={mocks} addTypename={false}>
+      <MockedProvider mocks={mocks} >
         <MemoryRouter>
           <ReportsPage />
         </MemoryRouter>

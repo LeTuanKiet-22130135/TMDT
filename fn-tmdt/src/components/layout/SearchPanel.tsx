@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Sparkles, SlidersHorizontal, Search, X } from 'lucide-react';
+import { Sparkles, SlidersHorizontal,  } from 'lucide-react';
 import shiroEnable from '../../assets/images/texture/shiro_enable.png';
 import shiroDisable from '../../assets/images/texture/shiro_disable.png';
 

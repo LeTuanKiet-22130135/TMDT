@@ -10,7 +10,6 @@ from pydantic import BaseModel
 from PIL import Image
 
 from tagger import tag_image
-from app.vector_store import add_product_to_vector_store
 
 router = APIRouter()
 
@@ -61,10 +60,6 @@ async def _process_and_callback(
 
         results = tag_image(image, threshold=threshold)
         ai_tags = [r.tag for r in results]
-
-        # Update FAISS vector index with combined tag text
-        tag_text = " ".join(ai_tags)
-        add_product_to_vector_store(product_id, tag_text, "")
 
         # Callback bk-tmdt to persist AI tags
         async with httpx.AsyncClient(timeout=30.0) as client:

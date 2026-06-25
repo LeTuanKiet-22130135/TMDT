@@ -1,5 +1,5 @@
-import apiClient from './api/api.client';
-import { OrderRead } from './types';
+import apiClient from './api.client';
+import type { OrderRead } from './types';
 
 export const OrderService = {
   async checkout(data: any): Promise<any> {

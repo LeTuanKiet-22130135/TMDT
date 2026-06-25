@@ -336,11 +336,7 @@ class Query:
         )
 
 
-from app.graphql.mutations import AuthMutation
-
-@strawberry.type
-class Mutation(AuthMutation):
-    pass
+from app.graphql.mutations import Mutation
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)
 graphql_router = GraphQLRouter(schema, context_getter=get_graphql_context)

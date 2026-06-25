@@ -1,5 +1,5 @@
-import apiClient from './api/api.client';
-import { CartRead, CartItemRead } from './types';
+import apiClient from './api.client';
+import type { CartRead, CartItemRead } from './types';
 
 export const CartService = {
   async getCart(): Promise<CartRead> {

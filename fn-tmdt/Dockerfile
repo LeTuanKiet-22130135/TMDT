@@ -6,6 +6,12 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
+
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+ARG VITE_CACAO_URL
+ENV VITE_CACAO_URL=$VITE_CACAO_URL
+
 RUN npm run build
 
 FROM nginx:alpine AS runner

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Star, ShoppingBag, FolderPlus, Send, MessageSquare } from 'lucide-react';
+import { Star, ShoppingBag, FolderPlus, Send } from 'lucide-react';
 import { useHomeData } from './Home/home.logic';
 import { Header } from '../components/layout/Header';
 import { Sidebar } from '../components/layout/Sidebar';
@@ -80,7 +80,7 @@ export const ProductDetailPage: React.FC = () => {
 
               {/* Thumbnails */}
               <div className="flex gap-3 overflow-x-auto pb-2">
-                {asset.images.map((imgUrl, idx) => (
+                {asset.images.map((imgUrl: string, idx: number) => (
                   <button
                     key={idx}
                     onClick={() => setActiveImageIndex(idx)}
@@ -218,7 +218,7 @@ export const ProductDetailPage: React.FC = () => {
               
               {/* Tags */}
               <div className="flex gap-2">
-                {asset.tags.map((t, idx) => (
+                {asset.tags.map((t: string, idx: number) => (
                   <Badge key={idx} variant="secondary"># {t}</Badge>
                 ))}
               </div>

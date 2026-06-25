@@ -7,7 +7,6 @@ import strawberry
 from app.agent import ask_agent, extract_search_query
 from app.database import get_db
 from app.models import Product, Store, User
-from app.vector_store import add_product_to_vector_store, search_similar_product_ids
 
 
 @strawberry.type
@@ -77,12 +76,7 @@ class Query:
             )
 
             if params.name:
-                similar_ids = search_similar_product_ids(params.name, k=10)
-                if similar_ids:
-                    uuids = [UUID(sid) for sid in similar_ids if _is_valid_uuid(sid)]
-                    query = query.filter(Product.id.in_(uuids))
-                else:
-                    query = query.filter(Product.name.ilike(f"%{params.name}%"))
+                query = query.filter(Product.name.ilike(f"%{params.name}%"))
 
             if params.min_price is not None:
                 query = query.filter(Product.price >= params.min_price)

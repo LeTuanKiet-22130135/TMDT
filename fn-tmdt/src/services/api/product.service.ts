@@ -1,5 +1,5 @@
-import apiClient from './api/api.client';
-import { ProductRead } from './types';
+import apiClient from './api.client';
+import type { ProductRead } from './types';
 
 export const ProductService = {
   async getNewest(): Promise<ProductRead[]> {

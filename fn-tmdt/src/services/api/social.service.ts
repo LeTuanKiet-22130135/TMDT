@@ -1,5 +1,5 @@
-import apiClient from './api/api.client';
-import { ReviewRead, CommentRead } from './types';
+import apiClient from './api.client';
+import type { ReviewRead, CommentRead } from './types';
 
 export const SocialService = {
   async addReview(data: any): Promise<ReviewRead> {

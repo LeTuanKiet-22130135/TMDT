@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { ApolloClient, InMemoryCache, createHttpLink, from } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
 import { onError } from "@apollo/client/link/error";
@@ -16,9 +17,10 @@ const authLink = setContext((_, { headers }) => {
   };
 });
 
-const errorLink = onError(({ graphQLErrors, networkError }) => {
+
+const errorLink = onError(({ graphQLErrors, networkError }: any) => {
   if (graphQLErrors) {
-    graphQLErrors.forEach(({ message, locations, path }) => {
+    graphQLErrors.forEach(({ message, locations, path }: any) => {
       console.error(`[GraphQL error] Message: ${message}, Location: ${locations}, Path: ${path}`);
     });
   }

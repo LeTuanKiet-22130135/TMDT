@@ -4,7 +4,7 @@ import { cacaoClient } from '../../apollo';
 import { SUGGESTIONS_QUERY } from '../../graphql/suggestions';
 
 /** @deprecated ProductDetailPage still uses this — will be removed when that page is refactored */
-export const useHomeData = () => ({ assets: [] as never[] });
+export const useHomeData = () => ({ assets: [] as any[] });
 
 export interface HomeProduct {
   id: string;

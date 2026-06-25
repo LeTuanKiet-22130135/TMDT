@@ -1,4 +1,4 @@
-import apiClient from './api/api.client';
+import apiClient from './api.client';
 
 export const PaymentService = {
   async getPayment(orderId: number): Promise<any> {

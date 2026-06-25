@@ -1,4 +1,4 @@
-import apiClient from './api/api.client';
+import apiClient from './api.client';
 
 export const SellerService = {
   async getRevenueBarChart(params?: any): Promise<any> {

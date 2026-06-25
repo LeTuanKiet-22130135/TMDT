@@ -1,5 +1,5 @@
-import apiClient from './api/api.client';
-import { UserAdminRead, StoreAdminRead, ReportAdminRead } from './types';
+import apiClient from './api.client';
+import type { UserAdminRead, StoreAdminRead, ReportAdminRead } from './types';
 
 export const AdminService = {
   async getUsers(params?: any): Promise<UserAdminRead[]> {

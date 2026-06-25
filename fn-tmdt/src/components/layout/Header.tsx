@@ -13,8 +13,7 @@ export const Header: React.FC = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const isHome = location.pathname === '/';
-  const isCustom = location.pathname === '/custom-requests';
-
+  
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
