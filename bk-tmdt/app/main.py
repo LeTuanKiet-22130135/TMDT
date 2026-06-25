@@ -21,6 +21,7 @@ from app.api.v1.products import router as products_router
 from app.api.v1.stores import router as stores_router
 from app.api.v1.uploads import router as uploads_router
 from app.api.v1.internal import router as internal_router
+from app.api.v1.vnpay import router as vnpay_router
 from app.graphql import graphql_router
 
 UPLOAD_DIR = Path(__file__).resolve().parents[1] / "uploads"
@@ -48,6 +49,7 @@ app.include_router(stores_router, prefix=f"{settings.api_v1_prefix}/stores", tag
 app.include_router(products_router, prefix=f"{settings.api_v1_prefix}/products", tags=["products"])
 app.include_router(uploads_router, prefix=f"{settings.api_v1_prefix}/uploads", tags=["uploads"])
 app.include_router(internal_router, prefix=f"{settings.api_v1_prefix}/internal", tags=["internal"])
+app.include_router(vnpay_router, prefix=f"{settings.api_v1_prefix}/vnpay", tags=["vnpay"])
 app.include_router(graphql_router, prefix="/graphql", tags=["graphql"])
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 

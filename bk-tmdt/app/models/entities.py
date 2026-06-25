@@ -39,6 +39,7 @@ class PaymentMethodEnum(str, Enum):
     COD = "COD"
     CREDIT_CARD = "CREDIT_CARD"
     PAYPAL = "PAYPAL"
+    VNPAY = "VNPAY"
 
 
 class PaymentStatusEnum(str, Enum):
