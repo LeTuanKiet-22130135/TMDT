@@ -1,85 +1,101 @@
-# AGENTS.md — Lumine Project Context
+# CLAUDE.md
 
-## Tổng quan dự án
+**Lumine** — e-commerce digital assets (illustrations, Live2D). Monorepo.
 
-**Lumine** là một nền tảng thương mại điện tử chuyên bán **digital assets**, tập trung vào:
-
-- **Tranh/ảnh tĩnh** (illustrations, concept art, wallpapers, digital paintings)
-- **Live2D models** (character rigs, VTuber models, model components)
-
-Người dùng có thể mua/bán trực tiếp hoặc đặt **custom request** (yêu cầu thiết kế theo đặt hàng).
-
----
-
-## Cấu trúc monorepo
-
+## Layout
 ```
-TMDT/
-├── fn-tmdt/        # Frontend người dùng (React + Vite + TypeScript)
-├── fn-admin/       # Frontend quản trị viên (React + Vite + TypeScript)
-├── bk-tmdt/        # Backend chính (FastAPI + GraphQL + PostgreSQL)
-├── bk-cacao/       # Backend phụ trợ
-└── docs/           # Tài liệu kiến trúc
+fn-tmdt/    # React frontend (5173)
+fn-admin/   # Admin React (5174)
+bk-tmdt/    # FastAPI + GraphQL + PostgreSQL (8000)
+bk-cacao/   # AI search — LangChain + FAISS (8001)
+docs/       # architecture.md — update when adding services/models
 ```
 
+## Commands
+
+**Frontend** (fn-tmdt or fn-admin)
+```bash
+npm install
+npm run dev
+npm run build    # tsc -b && vite build
+npm run lint
+npm test         # vitest
+npx vitest run src/pages/SomePage.test.tsx
+```
+
+**bk-tmdt**
+```bash
+uv sync
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+alembic upgrade head
+alembic revision --autogenerate -m "describe change"
+python -m pytest tests/ -q
+python seed.py
+```
+
+**bk-cacao**
+```bash
+uv sync
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+**Docker**
+```bash
+docker compose up
+docker compose -f docker-compose.dev.yml up
+```
+
+## Architecture
+
+**API:** GraphQL (Strawberry) primary — all data via `/graphql`. REST `/api/v1/*` for auth/uploads/webhooks. Frontend reads `localStorage.access_token` → `Authorization: Bearer`.
+
+**bk-tmdt layers:**
+```
+app/models/entities.py     # SQLAlchemy ORM
+app/graphql/types.py       # Strawberry types + Connection types
+app/graphql/schema.py      # Query resolvers
+app/graphql/mutations.py   # Mutation resolvers
+app/crud/                  # DB queries
+app/api/                   # REST handlers
+app/schemas/               # Pydantic schemas
+```
+Use SQLAlchemy ORM. Raw SQL only if unavoidable — add comment why.
+
+**bk-cacao:** LangChain + Ollama + FAISS + Strawberry GraphQL. Semantic search + recommendations.
+
+**fn-tmdt / fn-admin:**
+- Logic in `.logic.ts` beside pages — never in components
+- Mock API in `.logic.ts` when backend not ready
+- State: React Context only (no Redux/Zustand)
+- `CartContext` → `src/contexts/CartContext.tsx`
+- Admin auth → `fn-admin/src/lib/auth.tsx` (role=admin only)
+
+**Design tokens (fn-tmdt):**
+- Main `#FFC9D2` · Accent `#F65C88` · BG `#FBFBFE` · Text `#040316`
+- Button gradient `#FF9FB1` → `#DB2E50`
+- Min padding: 5 units. Style: Modern & Minimalist.
+
+**DB:** PostgreSQL + pgvector (`pgvector/pgvector:pg16`). pgAdmin port 5050. Every model change needs Alembic migration.
+
+## Project Skills
+
+Skills live in `.agent/skills/<name>/SKILL.md`. Hook auto-injects index each prompt.
+
+Use skill: read `.agent/skills/<name>/SKILL.md`, follow instructions.
+
+Add skill: create `.agent/skills/<name>/SKILL.md`:
+```
 ---
-
-## Frontend người dùng (`fn-tmdt`)
-
-- **Framework**: React 18, Vite, TypeScript
-- **Styling**: Tailwind CSS v4, Radix UI, shadcn/ui
-- **Icons**: `lucide-react`
-- **Routing**: React Router v7
-- **Data fetching**: Apollo Client (GraphQL) + Axios (REST)
-- **i18n**: i18next — ngôn ngữ hiển thị **tiếng Việt**
-- **State**: React Context (không dùng Redux/Zustand)
-
-### Design system
-
-| Token | Giá trị |
-|---|---|
-| Main | `#FFC9D2` |
-| Secondary | `#FFAE98` |
-| Accent | `#F65C88` |
-| Background | `#FBFBFE` |
-| Text | `#040316` |
-| Gradient BG | `#FFAFB1` → `#FFFFFF` |
-| Accent gradient | `#FFAFB1` → `#9AC6FF` |
-| Prominent button | `#FF9FB1` → `#DB2E50` |
-
-Style tổng thể: **Modern & Minimalist** — thoáng, sạch, ưu tiên usability.
-
-### Quy tắc code UI
-
-- Tách business logic ra file `.logic.ts` riêng, **không** để trong component
-- Nếu API chưa sẵn, mock data trong file `.logic.ts` riêng
-- Tách component nhỏ, tái sử dụng — không viết toàn bộ UI trong 1 file
-- Padding tối thiểu `5` (spacing units)
-
+name: skill-name
+description: One-line summary
 ---
+```
+Auto-detected next prompt. No registration needed.
 
-## Backend (`bk-tmdt`)
+## Rules
 
-- **Framework**: FastAPI
-- **API**: GraphQL (Strawberry) + REST
-- **ORM**: SQLAlchemy + Alembic (migrations)
-- **DB**: PostgreSQL
-
----
-
-## Frontend admin (`fn-admin`)
-
-- Cùng stack với `fn-tmdt`
-- Quản lý: users, stores, products, orders, reports, dashboard
-
----
-
-## Domain chính
-
-| Khái niệm | Mô tả |
-|---|---|
-| **Asset / Product** | File digital (tranh tĩnh, Live2D model) được bán |
-| **Store** | Gian hàng của seller |
-| **Custom Request** | Đơn đặt hàng thiết kế theo yêu cầu |
-| **Cart** | Giỏ hàng (CartContext, mock data sẵn) |
-| **Order** | Đơn hàng sau khi thanh toán |
+- Commits → `dev`. Merge `main` only when verified.
+- GraphQL for all frontend↔backend data.
+- Update `docs/architecture.md` when adding services/models/structure.
+- New services need `Dockerfile`.
+- **Never commit to Gitea. Never touch Gitea workflows.**

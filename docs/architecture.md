@@ -1,62 +1,243 @@
-# Frontend
-## fn-tmdt
-- Reactjs (Vite + TypeScript)
+# Kiến trúc hệ thống — Lumine
+
+E-commerce digital assets (illustrations, Live2D). Monorepo.
+
+## Tổng quan
+
+```
+fn-tmdt/    # React frontend người dùng         :5173
+fn-admin/   # React frontend admin              :5174
+bk-tmdt/    # FastAPI + GraphQL + PostgreSQL     :8000
+bk-cacao/   # AI search — LangChain + FAISS      :8001
+db-tools/   # CLI backup/restore DB + uploads
+docs/       # Tài liệu kỹ thuật
+```
+
+**API chính:** GraphQL (`/graphql`) — toàn bộ data frontend ↔ backend đi qua đây.  
+**REST** (`/api/v1/*`) — chỉ dùng cho auth (login/register), upload file, webhook.
+
+---
+
+## Frontend
+
+### fn-tmdt
+
+React (Vite + TypeScript), port 5173 (dev).
+
+**Stack:**
 - Tailwind CSS v4
+- Apollo Client 4.x — **2 client riêng biệt:**
+  - `client` (`src/apollo.ts`) → bk-tmdt port 8000, kèm `Authorization: Bearer <token>`
+  - `cacaoClient` (`src/apollo.ts`) → bk-cacao port 8001, không cần auth
+- react-router-dom v7
+- react-responsive-masonry (trang chủ)
 - lucide-react
-- react-router-dom (v7)
-- Cấu trúc thư mục:
-  - `src/components/layout`: Chứa Header, Sidebar, BottomNav
-  - `src/components/ui`: Chứa các component dùng chung (Badge, Button, Input, SparkButton, CommentsModal)
-  - `src/pages/Home`: Trang chủ hiển thị danh sách tài nguyên và logic xử lý dữ liệu (`home.logic.ts`)
-  - `src/pages/ProductDetailPage.tsx`: Trang chi tiết tài nguyên và các bình luận
-  - `src/pages/CustomRequestsPage.tsx`: Trang Ticket / Chat yêu cầu custom của khách hàng
 
+**Cấu trúc thư mục:**
 
-## fn-admin
-Reactjs (Vite + TypeScript)
-Tailwind CSS v4
-Apollo Client (GraphQL)
-lucide-react
-react-router-dom (v7)
-Port: 5174 (dev), 80 (Docker)
-Cấu trúc thư mục:
+```
+src/
+  apollo.ts                   # Khởi tạo client + cacaoClient
+  contexts/
+    UserProfileContext.tsx     # Auth state toàn cục, notifyLogin() sau đăng nhập
+    CartContext.tsx
+  graphql/                    # GraphQL queries/mutations (theo feature)
+    profile.ts                # ME_QUERY, AUTHOR_QUERY, UPDATE_SHORTLINK_MUTATION
+    suggestions.ts            # SUGGESTIONS_QUERY (bk-cacao)
+  components/
+    layout/                   # Header, Sidebar, BottomNav
+    ui/                       # Badge, Button, Input, LoadingSlime, ...
+    Auth/                     # LoginModal, RegisterModal
+  pages/
+    Home/                     # Trang chủ — infinite scroll từ bk-cacao
+    Author/                   # Trang tác giả /author/:shortlink
+    CreateProduct/            # Đăng sản phẩm
+    Profile/                  # Chỉnh sửa hồ sơ cá nhân
+    ProductDetailPage.tsx
+    CustomRequestsPage.tsx
+```
 
-src/components/layout: Chứa Sidebar, AdminLayout
-src/components/ui: Chứa các component dùng chung (Button, Badge, Input, Table, Pagination, Card)
-src/components/Auth: Chứa ProtectedRoute (chỉ cho role=admin)
-src/lib/auth.tsx: Auth context quản lý token và user state
-src/pages/Dashboard: Trang tổng quan thống kê hệ thống
-src/pages/Users: Quản lý người dùng (ban/unban)
-src/pages/Products: Quản lý sản phẩm (ẩn/hiện)
-src/pages/Orders: Quản lý đơn hàng (filter theo status)
-src/pages/Stores: Quản lý cửa hàng (khóa/mở)
-src/pages/Reports: Quản lý báo cáo vi phạm (xem, lọc và xử lý báo cáo)
-src/services/graphql: GraphQL queries & mutations cho admin
+**Quy tắc:**
+- Logic nghiệp vụ trong `.logic.ts` — không đặt trong component
+- State dùng React Context, không dùng Redux/Zustand
+- `isAuthenticated` lấy từ `UserProfileContext`, gọi `notifyLogin()` sau login để cập nhật UI ngay không cần F5
 
+**Design tokens:**
+- Main `#FFC9D2` · Accent `#F65C88` · BG `#FBFBFE` · Text `#040316`
+- Button gradient `#FF9FB1` → `#DB2E50`
+- Padding tối thiểu 5 units
 
-# Backend
-- GraphQL là phương thức giao tiếp API chính thống nhất giữa Frontend và Backend.
-- Sử dụng ORM (SQLAlchemy) cho toàn bộ tương tác cơ sở dữ liệu.
+---
 
-## bk-tmdt
-- FastAPI (Python) làm Web Framework.
-- Strawberry làm GraphQL Library phục vụ xây dựng Schema, Query và Mutation.
-- SQLAlchemy làm ORM kết nối DB.
-- Cấu trúc thư mục chính:
-  - `app/graphql/types.py`: Định nghĩa các GraphQL Type tương ứng với Model và Connection Types (ví dụ: `UserConnection`, `ReportConnection`).
-  - `app/graphql/schema.py`: Chứa các GraphQL Query chính (ví dụ: `adminStats`, `adminReports`).
-  - `app/graphql/mutations.py`: Chứa các GraphQL Mutation nghiệp vụ (ví dụ: `banUser`, `resolveReport`).
-  - `app/models/`: Định nghĩa các Model SQLAlchemy (ví dụ: `User`, `Store`, `Report`, `Product`, `Order`).
-  - `tests/`: Chứa các bài kiểm thử GraphQL API sử dụng pytest và SQLite in-memory engine.
+### fn-admin
 
-## bk-cacao
-- python
-- uv package manager
-- onnx-runtime
-- langchain
+React (Vite + TypeScript), port 5174 (dev).
 
-## nginx
-- cấu hình load balance cho service, ví dụ frontend.
+**Stack:** Tailwind CSS v4, Apollo Client, lucide-react, react-router-dom v7
 
-## database
-- pgvector
+**Cấu trúc thư mục:**
+
+```
+src/
+  lib/auth.tsx                # Auth context, chỉ cho role=admin
+  components/
+    layout/                   # Sidebar, AdminLayout
+    ui/                       # Button, Badge, Table, Pagination, Card
+    Auth/                     # ProtectedRoute
+  pages/
+    Dashboard/                # Thống kê tổng quan
+    Users/                    # Quản lý user (ban/unban)
+    Products/                 # Quản lý sản phẩm (ẩn/hiện)
+    Orders/                   # Quản lý đơn hàng
+    Stores/                   # Quản lý cửa hàng (khóa/mở)
+    Reports/                  # Xử lý báo cáo vi phạm
+  services/graphql/           # GraphQL queries & mutations cho admin
+```
+
+---
+
+## Backend
+
+### bk-tmdt
+
+FastAPI + Strawberry GraphQL + PostgreSQL, port 8000.
+
+**Layers:**
+
+```
+app/
+  models/entities.py          # SQLAlchemy ORM — source of truth cho schema
+  graphql/
+    types.py                  # Strawberry types + Connection types
+    schema.py                 # Query resolvers
+    mutations.py              # Mutation resolvers
+  api/v1/
+    auth.py                   # POST /api/v1/auth/login, /register
+    uploads.py                # POST /api/v1/uploads — lưu file vào uploads/
+    internal.py               # Internal endpoints
+  crud/                       # DB queries tái sử dụng
+  schemas/                    # Pydantic request/response schemas
+alembic/                      # Migrations — bắt buộc khi thay đổi model
+uploads/                      # File storage (ảnh sản phẩm, avatar)
+```
+
+**Models chính:**
+
+| Model | Ghi chú |
+|---|---|
+| `User` | `shortlink` (32 ký tự, unique), `is_gold`, `is_verified`, `avatar_url` |
+| `Store` | Tự động tạo khi user đăng ký |
+| `Product` | `image_urls` (JSONB), `user_tags`, `ai_tags`, `license_type` |
+| `Order`, `OrderItem` | |
+| `Cart`, `CartItem` | |
+| `Report` | Báo cáo vi phạm |
+
+**Shortlink system:**
+- Mỗi user có `shortlink` duy nhất (10 ký tự alphanumeric random)
+- Trang tác giả: `/author/:shortlink`
+- Tài khoản free: shortlink ngẫu nhiên, không đổi được
+- Tài khoản gold (`is_gold=true`): đổi được, tối đa 32 ký tự, mutation `updateShortlink`
+
+**Quy tắc:**
+- Dùng SQLAlchemy ORM, raw SQL chỉ khi thực sự cần (ghi chú lý do)
+- Mọi thay đổi model → tạo Alembic migration
+- Exception messages bằng tiếng Việt
+
+---
+
+### bk-cacao
+
+AI Search & Recommendations, port 8001.
+
+**Stack:** FastAPI + Strawberry GraphQL, LangChain + Ollama, FAISS, ONNX Runtime, uv
+
+**Kiến trúc:**
+
+```
+main.py                       # FastAPI app, không có SQLite init
+app/
+  database.py                 # PostgreSQL session (đọc chung DB với bk-tmdt)
+  models.py                   # ORM read-only: Product, Store, User
+  schema.py                   # GraphQL schema
+  agent.py                    # LangChain agent + extract_search_query
+  vector_store.py             # FAISS index (all-MiniLM-L6-v2)
+  routes/
+    tagging.py                # REST: ONNX image auto-tagging
+```
+
+**GraphQL queries:**
+
+| Query/Mutation | Mô tả |
+|---|---|
+| `suggestions(offset, limit)` | Danh sách sản phẩm cho trang chủ (infinite scroll) |
+| `suggestions_count` | Tổng số sản phẩm active |
+| `search_products_by_ai(prompt)` | Semantic search qua FAISS + LLM extract params |
+| `ask_ai(prompt)` | LangChain agent trả lời tự nhiên |
+
+**Lưu ý:**
+- Chỉ đọc từ PostgreSQL của bk-tmdt (không ghi)
+- Không có SQLite — đã xóa hoàn toàn
+- Kết nối DB qua env `TMDT_DB_URL`
+
+---
+
+## Database
+
+PostgreSQL 16 + pgvector (`pgvector/pgvector:pg16`), port 5432.  
+Container: `tmdt_db`. pgAdmin tại port 5050.
+
+**Quản lý schema:** Alembic (trong `bk-tmdt/alembic/`).  
+**Migrations quan trọng:**
+- `category_id` nullable (SET NULL on delete)
+- `shortlink`, `is_gold` trên bảng users
+
+---
+
+## db-tools
+
+CLI backup/restore database và file storage. Xem hướng dẫn đầy đủ: [`db-tools.md`](./db-tools.md)
+
+```
+db-tools/
+  main.py          # CLI: export / import
+  src/
+    config.py      # Cấu hình từ .env
+    exporter.py    # pg_dump + uploads → .tar.gz
+    importer.py    # Giải nén → tạo DB → psql restore → copy files
+  .env.example
+```
+
+**Lệnh nhanh:**
+
+```bash
+cd db-tools
+
+# Xuất backup
+uv run python main.py export --output-dir ./backups
+
+# Khôi phục vào tmdt-backup (không đụng production)
+uv run python main.py import backups/tmdt_backup_YYYYMMDD_HHMMSS.tar.gz
+```
+
+---
+
+## Docker
+
+```yaml
+# docker-compose.yml (production)
+services:
+  db:        pgvector/pgvector:pg16  :5432
+  bk-tmdt:   ./bk-tmdt               :8000
+  bk-cacao:  ./bk-cacao              :8001
+  pgadmin:   dpage/pgadmin4          :5050
+```
+
+Mỗi service mới cần có `Dockerfile`.
+
+---
+
+## Quy ước
+
+- Commit vào branch `dev`. Merge `main` khi đã verify.
+- Không commit lên Gitea, không chỉnh workflow Gitea.
+- Update file này khi thêm service, model mới, hoặc thay đổi cấu trúc lớn.
