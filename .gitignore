@@ -10,3 +10,4 @@ bk-cacao/.env
 bk-tmdt/.env
 fn-admin/.env
 fn-tmdt/.env
+agent_credentials.txt
