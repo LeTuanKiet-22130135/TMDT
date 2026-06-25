@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { HomeProduct } from './home.logic';
 
 interface AssetCardProps {
@@ -7,6 +7,8 @@ interface AssetCardProps {
 }
 
 export const AssetCard: React.FC<AssetCardProps> = ({ product }) => {
+  const navigate = useNavigate();
+  
   const formattedPrice = product.price === 0
     ? 'Miễn phí'
     : product.price.toLocaleString('vi-VN') + ' ₫';
@@ -15,7 +17,7 @@ export const AssetCard: React.FC<AssetCardProps> = ({ product }) => {
     `https://ui-avatars.com/api/?name=${encodeURIComponent(product.authorName)}&background=ffafb1&color=db2e50`;
 
   return (
-    <Link to={`/asset/${product.id}`} className="group cursor-pointer block relative">
+    <div onClick={() => navigate(`/asset/${product.id}`)} className="group cursor-pointer block relative">
       <div className="relative rounded-2xl overflow-hidden bg-[#f5f5f5] transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-1">
         {product.imageUrl ? (
           <img
@@ -74,6 +76,6 @@ export const AssetCard: React.FC<AssetCardProps> = ({ product }) => {
           </span>
         </div>
       </div>
-    </Link>
+    </div>
   );
 };

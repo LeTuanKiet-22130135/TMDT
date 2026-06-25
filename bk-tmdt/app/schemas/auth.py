@@ -12,6 +12,10 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class SocialLoginRequest(BaseModel):
+    token: str
+
+
 class UserRead(BaseModel):
     id: str
     email: EmailStr
