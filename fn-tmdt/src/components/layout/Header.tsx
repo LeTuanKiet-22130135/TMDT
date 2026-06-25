@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Bell } from 'lucide-react';
+import { Search, Bell, ShoppingCart } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LoginModal } from '../Auth/LoginModal';
 import { UserMenu } from '../User/UserMenu';
 import { CreateButton } from '../ui/CreateButton';
 import { SearchPanel } from './SearchPanel';
+import { useCart } from '../../contexts/CartContext';
+import { CartPanel } from '../Cart/CartPanel';
 
 export const Header: React.FC = () => {
   const { t } = useTranslation();
@@ -15,7 +17,9 @@ export const Header: React.FC = () => {
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
+
+  const { toggleCart, totalItems, isOpen: isCartOpen } = useCart();
+
   const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
   const [activeSearchTab, setActiveSearchTab] = useState<'shiro' | 'manual'>('shiro');
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -91,6 +95,25 @@ export const Header: React.FC = () => {
           <button className="p-2 hover:bg-surface-bright rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#ffafb1]">
             <Bell className="text-on-surface-variant" size={24} />
           </button>
+
+          {/* Cart icon */}
+          <div className="relative">
+            <button
+              onClick={toggleCart}
+              className={`p-2 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#ffafb1] ${
+                isCartOpen ? 'bg-primary/40 text-[#F65C88]' : 'hover:bg-surface-bright text-on-surface-variant'
+              }`}
+              aria-label="Giỏ hàng"
+            >
+              <ShoppingCart size={24} />
+            </button>
+            {totalItems > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-4.5 h-4.5 flex items-center justify-center rounded-full bg-linear-to-br from-[#FF9FB1] to-[#DB2E50] text-white text-[10px] font-bold px-1 shadow-sm pointer-events-none">
+                {totalItems > 99 ? '99+' : totalItems}
+              </span>
+            )}
+            <CartPanel />
+          </div>
           
           {isAuthenticated ? (
             <UserMenu />

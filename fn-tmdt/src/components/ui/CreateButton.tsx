@@ -31,14 +31,14 @@ export const CreateButton: React.FC = () => {
   };
 
   return (
-    <div 
+    <div
       className="relative inline-block"
       onMouseEnter={() => { setIsHovered(true); triggerStars(); }}
       onMouseLeave={() => setIsHovered(false)}
       onClick={triggerStars}
     >
-      <Link 
-        to="/custom-requests"
+      <Link
+        to="/create-product"
         className={`
           relative overflow-hidden flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-bold text-white transition-all duration-300
           bg-gradient-to-r from-[#ffafb1] via-[#f65c88] to-[#db2e50] bg-[length:200%_auto]
