@@ -1,4 +1,6 @@
 **/test_data
 **/.cache
 __pycache__/
+**/__pycache__/
+*.pyc
 **/faiss_index
