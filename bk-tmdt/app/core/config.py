@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     # Payment provider credentials
     payment_api_key: str = Field(default="", validation_alias="PAYMENT_API_KEY")
 
+    # VNPay Settings (Test)
+    vnpay_tmn_code: str = Field(default="YOUR_TMN_CODE", validation_alias="VNPAY_TMN_CODE")
+    vnpay_hash_secret: str = Field(default="YOUR_HASH_SECRET", validation_alias="VNPAY_HASH_SECRET")
+    vnpay_url: str = Field(default="https://sandbox.vnpayment.vn/paymentv2/vpcpay.html", validation_alias="VNPAY_URL")
+    vnpay_return_url: str = Field(default="http://localhost:8000/api/v1/payment/vnpay/return", validation_alias="VNPAY_RETURN_URL")
+
     # Mailtrap Settings
     smtp_host: str = Field(default="sandbox.smtp.mailtrap.io", validation_alias="SMTP_HOST")
     smtp_port: int = Field(default=2525, validation_alias="SMTP_PORT")
