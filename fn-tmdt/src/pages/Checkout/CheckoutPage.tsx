@@ -56,6 +56,7 @@ export const CheckoutPage: React.FC = () => {
               .filter(([, v]) => parseInt(v) > 0)
               .map(([k, v]) => [k, parseInt(v)])
           ),
+          return_url: `${window.location.origin}/checkout/result`,
         }),
       });
 
@@ -209,7 +210,7 @@ export const CheckoutPage: React.FC = () => {
               <button
                 onClick={handleCheckout}
                 disabled={loading}
-                className="w-full py-4 bg-gradient-to-r from-[#FF9FB1] via-[#F65C88] to-[#DB2E50] text-white rounded-full font-bold shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-100 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-[calc(100%+20px)] -mx-[10px] py-4 bg-gradient-to-r from-[#FF9FB1] via-[#F65C88] to-[#DB2E50] text-white rounded-full font-bold shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-100 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <Loader2 size={18} className="animate-spin" />

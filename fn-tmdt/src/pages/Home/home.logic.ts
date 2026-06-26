@@ -27,51 +27,65 @@ const PAGE_SIZE = 20;
 const MAX_ITEMS = 100;
 
 export const useHomeProducts = () => {
-  const [offset, setOffset] = useState(0);
-  const [allProducts, setAllProducts] = useState<HomeProduct[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [reachedMax, setReachedMax] = useState(false);
 
-  const { data, loading, fetchMore, refetch } = useQuery(SUGGESTIONS_QUERY, {
+  const { data, loading, fetchMore, refetch } = useQuery<{ suggestions?: HomeProduct[] }>(SUGGESTIONS_QUERY, {
     client: cacaoClient,
     variables: { offset: 0, limit: PAGE_SIZE },
     fetchPolicy: 'network-only',
+    notifyOnNetworkStatusChange: true,
   });
 
+  const products: HomeProduct[] = data?.suggestions ?? [];
+
   useEffect(() => {
-    const items: HomeProduct[] = (data as { suggestions?: HomeProduct[] } | undefined)?.suggestions ?? [];
-    if (items.length === 0) return;
-    setAllProducts(items);
-    if (items.length < PAGE_SIZE) setHasMore(false);
-  }, [data]);
+    if (products.length > 0 && products.length < PAGE_SIZE) {
+      setHasMore(false);
+    }
+  }, [products.length]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loading) return;
-    const nextOffset = offset + PAGE_SIZE;
-    const result = await fetchMore({ variables: { offset: nextOffset, limit: PAGE_SIZE } });
-    const newItems: HomeProduct[] = (result.data as { suggestions: HomeProduct[] }).suggestions ?? [];
-    setAllProducts((prev) => {
-      const merged = [...prev, ...newItems];
-      if (merged.length >= MAX_ITEMS) {
-        setHasMore(false);
-        setReachedMax(true);
-        return merged.slice(0, MAX_ITEMS);
-      }
-      return merged;
-    });
-    setOffset(nextOffset);
-    if (newItems.length < PAGE_SIZE) setHasMore(false);
-  }, [hasMore, loading, offset, fetchMore]);
+    const nextOffset = products.length;
+    
+    if (nextOffset >= MAX_ITEMS) {
+      setHasMore(false);
+      setReachedMax(true);
+      return;
+    }
+
+    try {
+      await fetchMore({
+        variables: { offset: nextOffset, limit: PAGE_SIZE },
+        updateQuery: (prev, { fetchMoreResult }) => {
+          if (!fetchMoreResult) return prev;
+          const prevItems = (prev as { suggestions: HomeProduct[] }).suggestions ?? [];
+          const newItems = (fetchMoreResult as { suggestions: HomeProduct[] }).suggestions ?? [];
+          if (newItems.length < PAGE_SIZE) {
+            setHasMore(false);
+          }
+          const merged = [...prevItems, ...newItems];
+          if (merged.length >= MAX_ITEMS) {
+             setHasMore(false);
+             setReachedMax(true);
+             return { suggestions: merged.slice(0, MAX_ITEMS) };
+          }
+          return { suggestions: merged };
+        },
+      });
+    } catch (err) {
+      console.error('[useHomeProducts] loadMore error:', err);
+    }
+  }, [hasMore, loading, products.length, fetchMore]);
 
   const refresh = useCallback(async () => {
-    setAllProducts([]);
-    setOffset(0);
     setHasMore(true);
     setReachedMax(false);
     await refetch({ offset: 0, limit: PAGE_SIZE });
   }, [refetch]);
 
-  return { products: allProducts, loading, hasMore, reachedMax, loadMore, refresh };
+  return { products, loading, hasMore, reachedMax, loadMore, refresh };
 };
 
 const P_INITIAL = 20;

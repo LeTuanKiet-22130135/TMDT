@@ -33,6 +33,7 @@ def create_payment_url(
     amount: int,
     order_info: str,
     ip_addr: str,
+    return_url: str | None = None,
 ) -> str:
     """Build a VNPay sandbox payment URL.
 
@@ -41,6 +42,7 @@ def create_payment_url(
         amount: Payment amount in VND (will be multiplied by 100 per VNPay spec).
         order_info: Description shown on VNPay payment page.
         ip_addr: Customer IP address.
+        return_url: Custom return URL to override the default.
 
     Returns:
         Full redirect URL to VNPay sandbox.
@@ -57,7 +59,7 @@ def create_payment_url(
         "vnp_OrderInfo": order_info,
         "vnp_OrderType": VNPAY_ORDER_TYPE,
         "vnp_Locale": VNPAY_LOCALE,
-        "vnp_ReturnUrl": settings.vnpay_return_url,
+        "vnp_ReturnUrl": return_url or settings.vnpay_return_url,
         "vnp_IpAddr": ip_addr,
         "vnp_CreateDate": now.strftime("%Y%m%d%H%M%S"),
         "vnp_ExpireDate": (now + timedelta(minutes=15)).strftime("%Y%m%d%H%M%S"),

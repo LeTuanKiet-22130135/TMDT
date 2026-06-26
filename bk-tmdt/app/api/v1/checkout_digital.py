@@ -31,6 +31,7 @@ router = APIRouter()
 class DigitalCheckoutRequest(BaseModel):
     product_ids: list[str]
     tips: dict[str, int] = {}   # store_id (str UUID) → tip VND
+    return_url: str
 
 
 class DigitalCheckoutResponse(BaseModel):
@@ -117,6 +118,7 @@ def checkout_digital(
         amount=total_vnd,
         order_info=f"Lumine {len(products)} digital assets",
         ip_addr=client_ip,
+        return_url=body.return_url,
     )
 
     return DigitalCheckoutResponse(
