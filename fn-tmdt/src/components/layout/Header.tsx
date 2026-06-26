@@ -8,6 +8,7 @@ import { CreateButton } from '../ui/CreateButton';
 import { SearchPanel } from './SearchPanel';
 import { useCart } from '../../contexts/CartContext';
 import { CartPanel } from '../Cart/CartPanel';
+import { useUserProfile } from '../../contexts/UserProfileContext';
 
 export const Header: React.FC = () => {
   const { t } = useTranslation();
@@ -15,9 +16,10 @@ export const Header: React.FC = () => {
   const isHome = location.pathname === '/';
   
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { profile } = useUserProfile();
+  const isAuthenticated = !!profile.id;
 
-  const { toggleCart, totalItems, isOpen: isCartOpen } = useCart();
+  const { toggleCart, totalItems, isOpen: isCartOpen, addedProductId } = useCart();
 
   const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
   const [activeSearchTab, setActiveSearchTab] = useState<'shiro' | 'manual'>('shiro');
@@ -33,15 +35,6 @@ export const Header: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Check auth status on mount
-  useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    setIsAuthenticated(!!token);
-  }, []);
-
-  const handleLoginSuccess = () => {
-    setIsAuthenticated(true);
-  };
 
   return (
     <header className="w-full sticky top-0 z-40 bg-surface shadow-sm flex items-center justify-between px-8 py-4 font-headline antialiased">
@@ -107,7 +100,12 @@ export const Header: React.FC = () => {
               <ShoppingCart size={24} />
             </button>
             {totalItems > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-4.5 h-4.5 flex items-center justify-center rounded-full bg-linear-to-br from-[#FF9FB1] to-[#DB2E50] text-white text-[10px] font-bold px-1 shadow-sm pointer-events-none">
+              <span
+                key={totalItems}
+                className={`absolute -top-0.5 -right-0.5 min-w-4.5 h-4.5 flex items-center justify-center rounded-full bg-linear-to-br from-[#FF9FB1] to-[#DB2E50] text-white text-[10px] font-bold px-1 shadow-sm pointer-events-none ${
+                  addedProductId ? 'animate-bounce' : ''
+                }`}
+              >
                 {totalItems > 99 ? '99+' : totalItems}
               </span>
             )}
@@ -138,7 +136,7 @@ export const Header: React.FC = () => {
       <LoginModal 
         isOpen={isLoginModalOpen} 
         onClose={() => setIsLoginModalOpen(false)} 
-        onSuccess={handleLoginSuccess} 
+        onSuccess={() => setIsLoginModalOpen(false)} 
       />
     </header>
   );

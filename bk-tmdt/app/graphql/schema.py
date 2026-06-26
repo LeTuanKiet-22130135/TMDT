@@ -40,7 +40,7 @@ from app.graphql.types import (
     to_order_type,
     to_report_type,
 )
-from app.models import Category, User, Order, Report, Product, Store, RoleEnum, OrderStatusEnum
+from app.models import Category, User, Order, OrderItem, Report, Product, Store, RoleEnum, OrderStatusEnum
 
 
 
@@ -72,6 +72,23 @@ class Query:
         if user is None:
             return None
         return to_user_type(user)
+
+    @strawberry.field
+    def my_purchased_product_ids(self, info: Info) -> list[strawberry.ID]:
+        user = _current_user(info)
+        if user is None:
+            return []
+        db = _db(info)
+        stmt = (
+            select(OrderItem.product_id)
+            .join(Order, OrderItem.order_id == Order.id)
+            .where(
+                Order.user_id == user.id,
+                Order.status.in_([OrderStatusEnum.PAID, OrderStatusEnum.COMPLETED]),
+            )
+            .distinct()
+        )
+        return [str(pid) for pid in db.scalars(stmt).all()]
 
     @strawberry.field
     def author(self, info: Info, shortlink: str) -> AuthorType | None:

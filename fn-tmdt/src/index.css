@@ -172,6 +172,12 @@
 
   body {
     @apply bg-background text-foreground;
+    isolation: isolate;
+  }
+
+  #root {
+    position: relative;
+    z-index: 2;
   }
 
   html {

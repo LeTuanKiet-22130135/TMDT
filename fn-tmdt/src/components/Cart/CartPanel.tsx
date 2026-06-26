@@ -1,12 +1,50 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { ShoppingBag, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
 import { CartItem } from './CartItem';
 import { formatPrice } from './cart.logic';
 
+function useAnimatedPrice(target: number): string {
+  const [displayed, setDisplayed] = useState(target);
+  const rafRef = useRef<number | null>(null);
+  const prevTarget = useRef(target);
+
+  useEffect(() => {
+    if (target === prevTarget.current) return;
+    prevTarget.current = target;
+
+    const DURATION = 300;
+    const start = performance.now();
+
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      const t = Math.min(elapsed / DURATION, 1);
+
+      if (t < 1) {
+        // random scramble until near end
+        const rand = Math.floor(Math.random() * target * 1.5);
+        setDisplayed(rand);
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        setDisplayed(target);
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [target]);
+
+  return formatPrice(displayed);
+}
+
 export const CartPanel: React.FC = () => {
   const { items, isOpen, closeCart, totalPrice } = useCart();
   const panelRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const animatedPrice = useAnimatedPrice(totalPrice);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -63,9 +101,18 @@ export const CartPanel: React.FC = () => {
         <div className="px-5 py-4 border-t border-[#FFC9D2]/40">
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm text-[#040316]/60 font-medium">Tổng cộng</span>
-            <span className="text-lg font-bold text-[#040316]">{formatPrice(totalPrice)}</span>
+            <span
+              key={totalPrice}
+              className="text-lg font-bold text-[#040316] tabular-nums transition-all"
+              style={{ fontVariantNumeric: 'tabular-nums' }}
+            >
+              {animatedPrice}
+            </span>
           </div>
-          <button className="w-full py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-[#FF9FB1] to-[#DB2E50] shadow-md hover:shadow-lg hover:opacity-95 active:scale-[0.98] transition-all duration-150">
+          <button
+            onClick={() => { closeCart(); navigate('/checkout'); }}
+            className="w-full py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-[#FF9FB1] to-[#DB2E50] shadow-md hover:shadow-lg hover:opacity-95 active:scale-[0.98] transition-all duration-150"
+          >
             Tiến hành thanh toán
           </button>
         </div>

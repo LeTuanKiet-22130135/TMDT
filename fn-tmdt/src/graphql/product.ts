@@ -1,5 +1,38 @@
 import { gql } from '@apollo/client';
 
+export const MY_PURCHASED_IDS_QUERY = gql`
+  query MyPurchasedProductIds {
+    myPurchasedProductIds
+  }
+`;
+
+export const PRODUCT_DETAIL_QUERY = gql`
+  query ProductDetail($productId: UUID!) {
+    product(productId: $productId) {
+      id
+      name
+      description
+      price
+      imageUrls
+      userTags
+      aiTags
+      licenseType
+      softwareTags
+      formatTags
+      store {
+        id
+        name
+        owner {
+          username
+          fullName
+          avatarUrl
+          shortlink
+        }
+      }
+    }
+  }
+`;
+
 export const CATEGORIES_QUERY = gql`
   query Categories {
     categories {

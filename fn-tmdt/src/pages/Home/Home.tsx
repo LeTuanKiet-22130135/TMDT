@@ -30,7 +30,7 @@ export const Home: React.FC = () => {
   }, [hasMore, loading, loadMore]);
 
   return (
-    <div className="bg-surface font-body text-on-surface antialiased h-screen flex flex-col relative z-0 overflow-hidden">
+    <div className="bg-transparent font-body text-on-surface antialiased h-screen flex flex-col relative z-0 overflow-hidden">
       <Header />
       <div className="flex flex-1 relative overflow-hidden">
         <Sidebar />

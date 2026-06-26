@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import type { CartItem } from '../components/Cart/cart.logic';
+import { cartDBGetAll, cartDBPut, cartDBDelete, cartDBClear } from '../services/cartDB';
 
 interface CartContextValue {
   items: CartItem[];
@@ -7,74 +8,65 @@ interface CartContextValue {
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
-  updateQuantity: (productId: number, delta: number) => void;
-  removeItem: (productId: number) => void;
+  addItem: (item: CartItem) => void;
+  removeItem: (productId: string) => void;
+  clearCart: () => void;
   totalItems: number;
   totalPrice: number;
+  addedProductId: string | null;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-const MOCK_ITEMS: CartItem[] = [
-  {
-    id: 1,
-    productId: 101,
-    name: 'Vòng tay bạc handmade',
-    price: 185000,
-    quantity: 2,
-    image: 'https://images.unsplash.com/photo-1611085583191-a3b181a88401?w=80&h=80&fit=crop',
-    storeName: 'Silver Craft Studio',
-  },
-  {
-    id: 2,
-    productId: 102,
-    name: 'Tranh sơn dầu phong cảnh',
-    price: 750000,
-    quantity: 1,
-    image: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=80&h=80&fit=crop',
-    storeName: 'Art House VN',
-  },
-  {
-    id: 3,
-    productId: 103,
-    name: 'Nến thơm hoa hồng',
-    price: 95000,
-    quantity: 3,
-    image: 'https://images.unsplash.com/photo-1602028915047-37269d1a73f7?w=80&h=80&fit=crop',
-    storeName: 'Bloom & Scent',
-  },
-];
-
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [items, setItems] = useState<CartItem[]>(MOCK_ITEMS);
+  const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [addedProductId, setAddedProductId] = useState<string | null>(null);
+  const addedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    cartDBGetAll().then(setItems).catch(() => {});
+  }, []);
 
   const openCart = useCallback(() => setIsOpen(true), []);
   const closeCart = useCallback(() => setIsOpen(false), []);
   const toggleCart = useCallback(() => setIsOpen((v) => !v), []);
 
-  const updateQuantity = useCallback((productId: number, delta: number) => {
-    setItems((prev) =>
-      prev
-        .map((item) =>
-          item.productId === productId
-            ? { ...item, quantity: Math.max(0, item.quantity + delta) }
-            : item
-        )
-        .filter((item) => item.quantity > 0)
-    );
+  const addItem = useCallback((item: CartItem) => {
+    setItems((prev) => {
+      if (prev.find((i) => i.productId === item.productId)) return prev;
+      const next = [...prev, item];
+      cartDBPut(item).catch(() => {});
+      return next;
+    });
+
+    if (addedTimerRef.current) clearTimeout(addedTimerRef.current);
+    setAddedProductId(item.productId);
+    addedTimerRef.current = setTimeout(() => setAddedProductId(null), 800);
+
+    setIsOpen(true);
   }, []);
 
-  const removeItem = useCallback((productId: number) => {
+  const removeItem = useCallback((productId: string) => {
     setItems((prev) => prev.filter((item) => item.productId !== productId));
+    cartDBDelete(productId).catch(() => {});
   }, []);
 
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const clearCart = useCallback(() => {
+    setItems([]);
+    cartDBClear().catch(() => {});
+  }, []);
+
+  const totalItems = items.length;
+  const totalPrice = items.reduce((sum, item) => sum + item.price, 0);
 
   return (
     <CartContext.Provider
-      value={{ items, isOpen, openCart, closeCart, toggleCart, updateQuantity, removeItem, totalItems, totalPrice }}
+      value={{
+        items, isOpen, openCart, closeCart, toggleCart,
+        addItem, removeItem, clearCart,
+        totalItems, totalPrice, addedProductId,
+      }}
     >
       {children}
     </CartContext.Provider>

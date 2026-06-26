@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client/react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useQuery, useMutation, useApolloClient } from '@apollo/client/react';
 import { ME_QUERY, UPDATE_PROFILE_MUTATION } from '../graphql/profile';
 
 export interface UserProfile {
@@ -84,12 +84,23 @@ function meDataToProfile(me: Record<string, unknown>): UserProfile {
 const UserProfileContext = createContext<UserProfileContextValue | null>(null);
 
 export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const apolloClient = useApolloClient();
   const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('access_token'));
 
   const { data, loading, refetch } = useQuery(ME_QUERY, {
     skip: !isAuthenticated,
     fetchPolicy: 'cache-and-network',
   });
+
+  // Auto-logout when token invalid/expired (backend returns me: null)
+  useEffect(() => {
+    if (isAuthenticated && data !== undefined && (data as { me?: unknown }).me === null) {
+      localStorage.removeItem('access_token');
+      setIsAuthenticated(false);
+      apolloClient.clearStore().catch(() => {});
+      window.location.replace('/login');
+    }
+  }, [isAuthenticated, data, apolloClient]);
 
   const [mutate] = useMutation(UPDATE_PROFILE_MUTATION, {
     refetchQueries: [{ query: ME_QUERY }],

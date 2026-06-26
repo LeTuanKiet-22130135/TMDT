@@ -83,7 +83,7 @@ export const ProfileEditPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="bg-surface font-body text-on-surface antialiased h-screen flex flex-col overflow-hidden">
+      <div className="bg-transparent font-body text-on-surface antialiased h-screen flex flex-col overflow-hidden">
         <Header />
         <div className="flex flex-1 items-center justify-center">
           <Loader2 size={32} className="animate-spin text-[#F65C88]" />
@@ -93,7 +93,7 @@ export const ProfileEditPage: React.FC = () => {
   }
 
   return (
-    <div className="bg-surface font-body text-on-surface antialiased h-screen flex flex-col overflow-hidden">
+    <div className="bg-transparent font-body text-on-surface antialiased h-screen flex flex-col overflow-hidden">
       <Header />
       <div className="flex flex-1 overflow-hidden min-h-0">
         <Sidebar />

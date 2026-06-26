@@ -13,6 +13,7 @@ import _FacebookLogin from 'react-facebook-login/dist/facebook-login-render-prop
 const FacebookLogin = (_FacebookLogin as any).default || _FacebookLogin;
 
 import { useTranslation } from 'react-i18next';
+import { useUserProfile } from '../../contexts/UserProfileContext';
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
@@ -20,11 +21,13 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
+  const { notifyLogin } = useUserProfile();
 
   const [login, { loading }] = useMutation(LOGIN_MUTATION, {
     onCompleted: (data: any) => {
       const { accessToken } = data.login;
       localStorage.setItem('access_token', accessToken);
+      notifyLogin();
       navigate('/');
     },
     onError: (error) => {
@@ -36,6 +39,7 @@ const LoginPage: React.FC = () => {
     try {
       const data = await AuthService.loginWithGoogle(credentialResponse.credential);
       localStorage.setItem('access_token', data.access_token);
+      notifyLogin();
       navigate('/');
     } catch (error: any) {
       setErrorMsg(error.response?.data?.detail || t('auth.login.error'));
@@ -47,6 +51,7 @@ const LoginPage: React.FC = () => {
       try {
         const data = await AuthService.loginWithFacebook(response.accessToken);
         localStorage.setItem('access_token', data.access_token);
+        notifyLogin();
         navigate('/');
       } catch (error: any) {
         setErrorMsg(error.response?.data?.detail || t('auth.login.error'));

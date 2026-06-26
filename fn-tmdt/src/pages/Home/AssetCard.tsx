@@ -1,6 +1,10 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ShoppingCart, Check } from 'lucide-react';
 import type { HomeProduct } from './home.logic';
+import { resolveMediaUrl } from '../../lib/media';
+import { useCart } from '../../contexts/CartContext';
+import { usePurchasedProductIds } from '../../hooks/usePurchasedProductIds';
 
 interface AssetCardProps {
   product: HomeProduct;
@@ -8,7 +12,12 @@ interface AssetCardProps {
 
 export const AssetCard: React.FC<AssetCardProps> = ({ product }) => {
   const navigate = useNavigate();
-  
+  const { addItem, items } = useCart();
+  const purchasedIds = usePurchasedProductIds();
+
+  const inCart = items.some((i) => i.productId === product.id);
+  const purchased = purchasedIds.has(product.id);
+
   const formattedPrice = product.price === 0
     ? 'Miễn phí'
     : product.price.toLocaleString('vi-VN') + ' ₫';
@@ -16,14 +25,32 @@ export const AssetCard: React.FC<AssetCardProps> = ({ product }) => {
   const avatarSrc = product.authorAvatar ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(product.authorName)}&background=ffafb1&color=db2e50`;
 
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (purchased || inCart) return;
+    addItem({
+      id: product.id,
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      image: resolveMediaUrl(product.imageUrl),
+      storeName: product.authorName,
+    });
+  };
+
   return (
-    <div onClick={() => navigate(`/asset/${product.id}`)} className="group cursor-pointer block relative">
+    <div
+      onClick={() => navigate(`/asset/${product.id}`)}
+      className="group cursor-pointer block relative"
+    >
       <div className="relative rounded-2xl overflow-hidden bg-[#f5f5f5] transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-1">
+
+        {/* Image */}
         {product.imageUrl ? (
           <img
             className="w-full h-auto block object-cover transition-transform duration-700 group-hover:scale-105"
             alt={product.name}
-            src={product.imageUrl}
+            src={resolveMediaUrl(product.imageUrl)}
             loading="lazy"
           />
         ) : (
@@ -33,47 +60,60 @@ export const AssetCard: React.FC<AssetCardProps> = ({ product }) => {
         )}
 
         {/* Bottom overlay */}
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-4 flex flex-col justify-end pt-12">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              {product.authorShortlink ? (
-                <Link
-                  to={`/author/${product.authorShortlink}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="shrink-0"
-                >
-                  <img
-                    src={avatarSrc}
-                    alt={product.authorName}
-                    className="w-7 h-7 rounded-full border border-white/20 object-cover"
-                  />
-                </Link>
-              ) : (
-                <img
-                  src={avatarSrc}
-                  alt={product.authorName}
-                  className="w-7 h-7 rounded-full border border-white/20 object-cover shrink-0"
-                />
-              )}
-              <div className="text-white min-w-0">
-                <p className="text-[10px] opacity-75 font-medium leading-none truncate">{product.authorName}</p>
-                <h3 className="font-headline font-bold text-xs md:text-sm line-clamp-1 mt-0.5">
-                  {product.name}
-                </h3>
-              </div>
-            </div>
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pb-3 pt-6 flex flex-col gap-1 transition-all duration-300 group-hover:pt-10">
 
-            <span className="shrink-0 px-2.5 py-1 bg-[#F65C88] hover:bg-[#F65C88]/90 text-white rounded-full text-[10px] md:text-xs font-bold shadow-sm transition-all duration-200">
-              {formattedPrice}
-            </span>
+          {/* Author row — hidden when not hovered */}
+          <div className="flex items-center gap-1.5 overflow-hidden max-h-0 opacity-0 group-hover:max-h-6 group-hover:opacity-100 transition-all duration-300">
+            {product.authorShortlink ? (
+              <Link
+                to={`/author/${product.authorShortlink}`}
+                onClick={(e) => e.stopPropagation()}
+                className="shrink-0"
+              >
+                <img src={avatarSrc} alt={product.authorName} className="w-5 h-5 rounded-full border border-white/20 object-cover" />
+              </Link>
+            ) : (
+              <img src={avatarSrc} alt={product.authorName} className="w-5 h-5 rounded-full border border-white/20 object-cover shrink-0" />
+            )}
+            <p className="text-[10px] text-white/60 font-medium truncate">{product.authorName}</p>
           </div>
-        </div>
 
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-          <span className="px-4 py-2 bg-white/95 text-[#F65C88] font-bold text-xs rounded-full shadow-lg scale-90 group-hover:scale-100 transition-all duration-300">
-            Xem chi tiết
-          </span>
+          {/* "Xem chi tiết" — hidden when not hovered */}
+          <p className="text-[10px] text-[#FFC9D2]/80 font-semibold tracking-wide uppercase leading-none overflow-hidden max-h-0 opacity-0 group-hover:max-h-4 group-hover:opacity-100 transition-all duration-300">
+            Xem chi tiết →
+          </p>
+
+          {/* Product name */}
+          <h3 className="font-headline font-bold text-xs md:text-sm text-white line-clamp-1 leading-tight">
+            {product.name}
+          </h3>
+
+          {/* Price + cart button */}
+          <div className="flex items-center justify-between gap-2 mt-0.5">
+            {product.price === 0 ? (
+              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-gradient-to-r from-[#FF9FB1] via-[#F65C88] to-[#DB2E50] text-white shadow-sm animate-pulse">
+                ✦ Miễn phí
+              </span>
+            ) : (
+              <span className="text-[#FFC9D2] font-bold text-xs">{formattedPrice}</span>
+            )}
+
+            <button
+              onClick={handleAddToCart}
+              disabled={purchased}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all duration-200 shrink-0 ${
+                purchased
+                  ? 'bg-gray-400/70 text-white cursor-not-allowed'
+                  : inCart
+                    ? 'bg-green-500/90 text-white'
+                    : 'bg-[#F65C88] hover:bg-[#F65C88]/90 text-white active:scale-95'
+              }`}
+              aria-label={purchased ? 'Đã mua' : inCart ? 'Đã thêm vào giỏ' : 'Thêm vào giỏ hàng'}
+            >
+              <Check size={11} strokeWidth={3} />
+              <span>{purchased ? 'Đã mua' : inCart ? 'Đã thêm' : 'Thêm'}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

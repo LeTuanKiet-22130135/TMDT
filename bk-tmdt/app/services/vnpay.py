@@ -65,7 +65,7 @@ def create_payment_url(
 
     # Sort params alphabetically and build query string (VNPay requirement)
     sorted_params = sorted(params.items())
-    query_string = urllib.parse.urlencode(sorted_params, quote_via=urllib.parse.quote)
+    query_string = urllib.parse.urlencode(sorted_params, quote_via=urllib.parse.quote_plus)
 
     # Generate secure hash
     secure_hash = _hmac_sha512(settings.vnpay_hash_secret, query_string)
@@ -98,7 +98,7 @@ def verify_return_params(params: dict[str, str]) -> dict:
 
     # Rebuild query string from sorted remaining params
     sorted_params = sorted(input_params.items())
-    query_string = urllib.parse.urlencode(sorted_params, quote_via=urllib.parse.quote)
+    query_string = urllib.parse.urlencode(sorted_params, quote_via=urllib.parse.quote_plus)
 
     # Compute expected hash
     expected_hash = _hmac_sha512(settings.vnpay_hash_secret, query_string)

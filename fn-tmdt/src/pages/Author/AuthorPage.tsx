@@ -6,6 +6,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { BottomNav } from '../../components/layout/BottomNav';
 import { Badge } from '../../components/ui/Badge';
 import { useAuthorData } from './author.logic';
+import { resolveMediaUrl } from '../../lib/media';
 
 const formatDate = (iso: string) => {
   const d = new Date(iso);
@@ -196,7 +197,7 @@ export const AuthorPage: React.FC = () => {
                       <div className="aspect-square overflow-hidden bg-[#FFC9D2]/10">
                         {p.imageUrls[0] ? (
                           <img
-                            src={p.imageUrls[0]}
+                            src={resolveMediaUrl(p.imageUrls[0])}
                             alt={p.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />

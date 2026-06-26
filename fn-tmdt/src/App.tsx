@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
 import { ApolloProvider } from '@apollo/client/react'
+import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { client } from './apollo'
 import { CartProvider } from './contexts/CartContext'
 import { UserProfileProvider } from './contexts/UserProfileContext'
@@ -12,12 +14,55 @@ import RegisterPage from "./pages/Auth/RegisterPage"
 import VerificationPage from "./pages/Auth/VerificationPage"
 import AuthorPage from "./pages/Author/AuthorPage"
 import ProfileEditPage from "./pages/Profile/ProfileEditPage"
+import CheckoutPage from "./pages/Checkout/CheckoutPage"
+import CheckoutResultPage from "./pages/Checkout/CheckoutResultPage"
+
+function CursorGlow() {
+  const glowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let x = window.innerWidth / 2;
+    let y = window.innerHeight / 2;
+    let raf: number;
+
+    const onMove = (e: MouseEvent) => { x = e.clientX; y = e.clientY; };
+    window.addEventListener('mousemove', onMove);
+
+    const animate = () => {
+      if (glowRef.current) {
+        glowRef.current.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+      }
+      raf = requestAnimationFrame(animate);
+    };
+    raf = requestAnimationFrame(animate);
+
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  return createPortal(
+    <div
+      ref={glowRef}
+      className="pointer-events-none fixed top-0 left-0 w-[700px] h-[700px] rounded-full"
+      style={{
+        zIndex: 1,
+        background: 'radial-gradient(circle, rgba(255,160,185,0.20) 0%, rgba(140,185,255,0.12) 45%, transparent 70%)',
+        mixBlendMode: 'soft-light',
+        willChange: 'transform',
+      }}
+    />,
+    document.body
+  );
+}
 
 function App() {
   return (
     <ApolloProvider client={client}>
       <UserProfileProvider>
       <CartProvider>
+      <CursorGlow />
       <Router>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -29,6 +74,8 @@ function App() {
           <Route path="/verify" element={<VerificationPage />} />
           <Route path="/author/:shortlink" element={<AuthorPage />} />
           <Route path="/profile" element={<ProfileEditPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/checkout/result" element={<CheckoutResultPage />} />
         </Routes>
       </Router>
       </CartProvider>
