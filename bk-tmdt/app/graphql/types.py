@@ -24,6 +24,7 @@ class UserType:
     reward_points: int
     is_active: bool
     created_at: datetime
+    shortlink_updated_at: datetime | None
 
 
 @strawberry.type
@@ -186,6 +187,7 @@ def to_user_type(user: User) -> UserType:
         reward_points=user.reward_points,
         is_active=user.is_active,
         created_at=user.created_at,
+        shortlink_updated_at=user.shortlink_updated_at,
     )
 
 

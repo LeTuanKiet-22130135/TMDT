@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Star, ShoppingCart, FolderPlus, Send, Check, Loader2 } from 'lucide-react';
-import { useQuery } from '@apollo/client/react';
+import { useQuery, useMutation } from '@apollo/client/react';
 import { client } from '../apollo';
-import { PRODUCT_DETAIL_QUERY } from '../graphql/product';
+import {
+  PRODUCT_DETAIL_QUERY,
+  IS_FOLLOWING_QUERY,
+  FOLLOW_MUTATION,
+  UNFOLLOW_MUTATION,
+  MY_FOLLOWED_AUTHORS_QUERY,
+} from '../graphql/product';
 import { Header } from '../components/layout/Header';
 import { Sidebar } from '../components/layout/Sidebar';
 import { BottomNav } from '../components/layout/BottomNav';
@@ -48,8 +54,39 @@ export const ProductDetailPage: React.FC = () => {
 
   const product = data?.product;
 
+  const token = localStorage.getItem('access_token');
+  const ownerShortlink = product?.store.owner.shortlink ?? '';
+
+  const { data: followData, refetch: refetchFollow } = useQuery<{ isFollowing: boolean }>(
+    IS_FOLLOWING_QUERY,
+    { variables: { shortlink: ownerShortlink }, skip: !token || !ownerShortlink, fetchPolicy: 'cache-and-network' }
+  );
+  const isFollowing = followData?.isFollowing ?? false;
+  const [followLoading, setFollowLoading] = useState(false);
+
+  const [followMutate] = useMutation(FOLLOW_MUTATION, {
+    refetchQueries: [{ query: MY_FOLLOWED_AUTHORS_QUERY }],
+  });
+  const [unfollowMutate] = useMutation(UNFOLLOW_MUTATION, {
+    refetchQueries: [{ query: MY_FOLLOWED_AUTHORS_QUERY }],
+  });
+
+  const handleFollowToggle = async () => {
+    if (!token) return;
+    setFollowLoading(true);
+    try {
+      if (isFollowing) {
+        await unfollowMutate({ variables: { shortlink: ownerShortlink } });
+      } else {
+        await followMutate({ variables: { shortlink: ownerShortlink } });
+      }
+      await refetchFollow();
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [isFollowing, setIsFollowing] = useState(false);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [commentsList, setCommentsList] = useState<string[]>([]);
   const [newCommentText, setNewCommentText] = useState('');
@@ -99,8 +136,6 @@ export const ProductDetailPage: React.FC = () => {
       storeName: product.store.name,
     });
   };
-
-  const handleFollowClick = () => setIsFollowing((v) => !v);
 
   const handlePostComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -270,14 +305,15 @@ export const ProductDetailPage: React.FC = () => {
                   </div>
                 </Link>
                 <button
-                  onClick={handleFollowClick}
-                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm ${
+                  onClick={handleFollowToggle}
+                  disabled={followLoading || !token}
+                  className={`px-5 py-2 rounded-full text-xs font-bold transition-all shadow-sm whitespace-nowrap disabled:opacity-50 ${
                     isFollowing
-                      ? 'bg-transparent border border-[#F65C88] text-[#F65C88]'
-                      : 'bg-white text-black hover:bg-white/95'
+                      ? 'bg-transparent border border-[#F65C88] text-[#F65C88] hover:bg-[#FFF1F3]'
+                      : 'bg-white text-[#040316] hover:bg-white/90'
                   }`}
                 >
-                  {isFollowing ? 'Đã Theo Dõi' : 'Follow'}
+                  {followLoading ? '...' : isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
                 </button>
               </div>
 

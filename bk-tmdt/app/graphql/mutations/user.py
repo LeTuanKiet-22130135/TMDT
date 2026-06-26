@@ -2,6 +2,7 @@ import strawberry
 from strawberry.types import Info
 from sqlalchemy import select
 from typing import Optional
+from datetime import datetime, timezone, timedelta
 
 from app.models import User
 from app.graphql.types import to_user_type, UserType
@@ -58,8 +59,11 @@ class UserMutation:
         if user is None:
             raise Exception("Bạn chưa đăng nhập")
 
-        if not user.is_gold:
-            raise Exception("Chỉ tài khoản Gold mới có thể đổi shortlink")
+        if user.shortlink_updated_at:
+            next_allowed = user.shortlink_updated_at + timedelta(days=10)
+            if datetime.now(timezone.utc) < next_allowed:
+                remaining = (next_allowed - datetime.now(timezone.utc)).days + 1
+                raise Exception(f"Bạn chỉ có thể đổi shortlink mỗi 10 ngày. Còn {remaining} ngày nữa.")
 
         sl = shortlink.strip().lower()
         if not sl:
@@ -75,6 +79,7 @@ class UserMutation:
             raise Exception("Shortlink này đã được sử dụng")
 
         user.shortlink = sl
+        user.shortlink_updated_at = datetime.now(timezone.utc)
         db.add(user)
         db.commit()
         db.refresh(user)

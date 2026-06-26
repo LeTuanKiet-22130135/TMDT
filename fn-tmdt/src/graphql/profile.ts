@@ -7,6 +7,7 @@ export const ME_QUERY = gql`
       email
       username
       shortlink
+      shortlinkUpdatedAt
       isGold
       fullName
       avatarUrl
@@ -53,7 +54,7 @@ export const UPDATE_SHORTLINK_MUTATION = gql`
     updateShortlink(shortlink: $shortlink) {
       id
       shortlink
-      isGold
+      shortlinkUpdatedAt
     }
   }
 `;

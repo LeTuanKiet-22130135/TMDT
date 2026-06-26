@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, TrendingUp, LayoutGrid, Users, Settings, HelpCircle } from 'lucide-react';
-import { SparkButton } from '../ui/SparkButton';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@apollo/client/react';
 import { MY_FOLLOWED_AUTHORS_QUERY } from '../../graphql/product';
@@ -118,9 +117,6 @@ export const Sidebar: React.FC = () => {
       </div>
 
       <div className="mt-auto flex flex-col gap-1 border-t border-outline-variant/10 pt-4">
-        <SparkButton className="mb-4" onClick={() => alert('Nâng cấp Premium thành công!')}>
-          Nâng cấp Premium
-        </SparkButton>
         <a className="flex items-center gap-3 text-on-surface-variant px-4 py-2 hover:bg-surface-bright rounded-full transition-all" href="#">
           <Settings size={20} />
           <span>Cài đặt</span>

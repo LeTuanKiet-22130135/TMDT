@@ -7,6 +7,7 @@ export interface UserProfile {
   displayName: string;
   handle: string;
   shortlink: string;
+  shortlinkUpdatedAt: string | null;
   isGold: boolean;
   email: string;
   avatar: string;
@@ -45,6 +46,7 @@ const DEFAULT_PROFILE: UserProfile = {
   displayName: 'Người Dùng',
   handle: 'user',
   shortlink: '',
+  shortlinkUpdatedAt: null,
   isGold: false,
   email: 'user@example.com',
   avatar: 'https://ui-avatars.com/api/?name=User&background=ffafb1&color=db2e50',
@@ -63,6 +65,7 @@ function meDataToProfile(me: Record<string, unknown>): UserProfile {
     displayName: String(me.fullName ?? 'Người Dùng'),
     handle: String(me.username ?? 'user'),
     shortlink: String(me.shortlink ?? ''),
+    shortlinkUpdatedAt: (me.shortlinkUpdatedAt as string) ?? null,
     isGold: Boolean(me.isGold),
     email: String(me.email ?? ''),
     avatar:

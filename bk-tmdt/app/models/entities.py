@@ -106,6 +106,7 @@ class User(Base, TimestampMixin):
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
     is_gold: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
     shortlink: Mapped[Optional[str]] = mapped_column(String(32), unique=True, nullable=True)
+    shortlink_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     verification_otp: Mapped[Optional[str]] = mapped_column(String(6), nullable=True)
     verification_otp_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 

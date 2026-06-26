@@ -1,19 +1,29 @@
-import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Star, ShoppingBag, Calendar, Globe, X, Link2, ArrowLeft, CheckCircle2, Crown } from 'lucide-react';
-import { useQuery, useMutation } from '@apollo/client/react';
-import { Header } from '../../components/layout/Header';
-import { Sidebar } from '../../components/layout/Sidebar';
-import { BottomNav } from '../../components/layout/BottomNav';
-import { Badge } from '../../components/ui/Badge';
-import { useAuthorData } from './author.logic';
-import { resolveMediaUrl } from '../../lib/media';
+import React, { useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import {
+  Star,
+  ShoppingBag,
+  Calendar,
+  Globe,
+  X,
+  Link2,
+  ArrowLeft,
+  CheckCircle2,
+  Crown,
+} from "lucide-react";
+import { useQuery, useMutation } from "@apollo/client/react";
+import { Header } from "../../components/layout/Header";
+import { Sidebar } from "../../components/layout/Sidebar";
+import { BottomNav } from "../../components/layout/BottomNav";
+import { Badge } from "../../components/ui/Badge";
+import { useAuthorData } from "./author.logic";
+import { resolveMediaUrl } from "../../lib/media";
 import {
   IS_FOLLOWING_QUERY,
   FOLLOW_MUTATION,
   UNFOLLOW_MUTATION,
   MY_FOLLOWED_AUTHORS_QUERY,
-} from '../../graphql/product';
+} from "../../graphql/product";
 
 const formatDate = (iso: string) => {
   const d = new Date(iso);
@@ -21,18 +31,23 @@ const formatDate = (iso: string) => {
 };
 
 const formatPrice = (v: number) =>
-  v === 0 ? 'Miễn phí' : new Intl.NumberFormat('vi-VN').format(v) + ' ₫';
+  v === 0 ? "Miễn phí" : new Intl.NumberFormat("vi-VN").format(v) + " ₫";
 
 export const AuthorPage: React.FC = () => {
   const { shortlink } = useParams<{ shortlink: string }>();
-  const { profile, products, loading, bannerImage } = useAuthorData(shortlink ?? '');
-  const token = localStorage.getItem('access_token');
+  const { profile, products, loading, bannerImage } = useAuthorData(
+    shortlink ?? "",
+  );
+  const token = localStorage.getItem("access_token");
   const [followLoading, setFollowLoading] = useState(false);
 
-  const { data: followData, refetch: refetchFollow } = useQuery<{ isFollowing: boolean }>(
-    IS_FOLLOWING_QUERY,
-    { variables: { shortlink: shortlink ?? '' }, skip: !token || !shortlink, fetchPolicy: 'cache-and-network' }
-  );
+  const { data: followData, refetch: refetchFollow } = useQuery<{
+    isFollowing: boolean;
+  }>(IS_FOLLOWING_QUERY, {
+    variables: { shortlink: shortlink ?? "" },
+    skip: !token || !shortlink,
+    fetchPolicy: "cache-and-network",
+  });
   const isFollowing = followData?.isFollowing ?? false;
 
   const [followMutate] = useMutation(FOLLOW_MUTATION, {
@@ -70,7 +85,10 @@ export const AuthorPage: React.FC = () => {
       <div className="flex items-center justify-center h-screen bg-[#FBFBFE] text-[#040316]">
         <div className="text-center">
           <p className="text-lg font-semibold">Không tìm thấy tác giả</p>
-          <Link to="/" className="text-[#F65C88] hover:underline mt-2 inline-block">
+          <Link
+            to="/"
+            className="text-[#F65C88] hover:underline mt-2 inline-block"
+          >
             Trở lại trang chủ
           </Link>
         </div>
@@ -79,7 +97,8 @@ export const AuthorPage: React.FC = () => {
   }
 
   const social = profile.socialLinks as Record<string, string>;
-  const avatarSrc = profile.avatarUrl ||
+  const avatarSrc =
+    profile.avatarUrl ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.fullName)}&background=ffafb1&color=db2e50`;
 
   return (
@@ -88,11 +107,14 @@ export const AuthorPage: React.FC = () => {
       <div className="flex flex-1 overflow-hidden min-h-0">
         <Sidebar />
         <main className="flex-1 overflow-y-auto">
-
           {/* Banner */}
           <div className="relative h-52 md:h-64 overflow-hidden">
             {bannerImage ? (
-              <img src={bannerImage} alt="banner" className="w-full h-full object-cover" />
+              <img
+                src={bannerImage}
+                alt="banner"
+                className="w-full h-full object-cover"
+              />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-[#FFAFB1] to-[#9AC6FF]" />
             )}
@@ -128,32 +150,49 @@ export const AuthorPage: React.FC = () => {
                       {profile.fullName}
                     </h1>
                     {profile.isGold && (
-                      <Crown size={18} className="text-yellow-500 fill-yellow-400" />
+                      <Crown
+                        size={18}
+                        className="text-yellow-500 fill-yellow-400"
+                      />
                     )}
                   </div>
-                  <p className="text-sm text-[#040316]/50 mt-0.5">@{profile.shortlink}</p>
+                  <p className="text-sm text-[#040316]/50 mt-0.5">
+                    @{profile.shortlink}
+                  </p>
                 </div>
               </div>
 
               {/* Actions */}
               <div className="flex items-center gap-3 md:pb-2">
                 {social.website && (
-                  <a href={social.website} target="_blank" rel="noopener noreferrer"
-                    className="p-2 rounded-full bg-[#FFC9D2]/20 hover:bg-[#FFC9D2]/40 transition-colors text-[#040316]/60">
+                  <a
+                    href={social.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-full bg-[#FFC9D2]/20 hover:bg-[#FFC9D2]/40 transition-colors text-[#040316]/60"
+                  >
                     <Globe size={18} />
                   </a>
                 )}
                 {social.twitter && (
-                  <a href={social.twitter} target="_blank" rel="noopener noreferrer"
+                  <a
+                    href={social.twitter}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="p-2 rounded-full bg-[#FFC9D2]/20 hover:bg-[#FFC9D2]/40 transition-colors text-[#040316]/60"
-                    title="Twitter / X">
+                    title="Twitter / X"
+                  >
                     <X size={18} />
                   </a>
                 )}
                 {social.instagram && (
-                  <a href={social.instagram} target="_blank" rel="noopener noreferrer"
+                  <a
+                    href={social.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="p-2 rounded-full bg-[#FFC9D2]/20 hover:bg-[#FFC9D2]/40 transition-colors text-[#040316]/60"
-                    title="Instagram">
+                    title="Instagram"
+                  >
                     <Link2 size={18} />
                   </a>
                 )}
@@ -162,11 +201,15 @@ export const AuthorPage: React.FC = () => {
                   disabled={followLoading || !token}
                   className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm disabled:opacity-60 ${
                     isFollowing
-                      ? 'bg-transparent border-2 border-[#F65C88] text-[#F65C88] hover:bg-[#FFF1F3]'
-                      : 'bg-gradient-to-r from-[#FF9FB1] to-[#DB2E50] text-white hover:opacity-90'
+                      ? "bg-transparent border-2 border-[#F65C88] text-[#F65C88] hover:bg-[#FFF1F3]"
+                      : "bg-gradient-to-r from-[#FF9FB1] to-[#DB2E50] text-white hover:opacity-90"
                   }`}
                 >
-                  {followLoading ? '...' : isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
+                  {followLoading
+                    ? "..."
+                    : isFollowing
+                      ? "Đang theo dõi"
+                      : "Theo dõi"}
                 </button>
               </div>
             </div>
@@ -182,7 +225,9 @@ export const AuthorPage: React.FC = () => {
             {profile.specialties.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-8">
                 {profile.specialties.map((s) => (
-                  <Badge key={s} variant="secondary">{s}</Badge>
+                  <Badge key={s} variant="secondary">
+                    {s}
+                  </Badge>
                 ))}
               </div>
             )}
@@ -194,7 +239,9 @@ export const AuthorPage: React.FC = () => {
                   <ShoppingBag size={14} />
                   Sản phẩm
                 </div>
-                <span className="text-2xl font-black text-[#040316]">{products.length}</span>
+                <span className="text-2xl font-black text-[#040316]">
+                  {products.length}
+                </span>
               </div>
               <div className="bg-white rounded-2xl border border-[#FFC9D2]/30 p-4 flex flex-col gap-1">
                 <div className="flex items-center gap-2 text-[#040316]/50 text-xs font-semibold">
@@ -208,7 +255,9 @@ export const AuthorPage: React.FC = () => {
                   <Calendar size={14} />
                   Thành viên từ
                 </div>
-                <span className="text-base font-bold text-[#040316]">{formatDate(profile.createdAt)}</span>
+                <span className="text-base font-bold text-[#040316]">
+                  {formatDate(profile.createdAt)}
+                </span>
               </div>
             </div>
 
@@ -216,7 +265,9 @@ export const AuthorPage: React.FC = () => {
             <div>
               <h2 className="text-lg font-extrabold text-[#040316] mb-5">
                 Sản phẩm
-                <span className="ml-2 text-sm font-normal text-[#040316]/40">({products.length})</span>
+                <span className="ml-2 text-sm font-normal text-[#040316]/40">
+                  ({products.length})
+                </span>
               </h2>
 
               {products.length === 0 ? (
@@ -228,7 +279,7 @@ export const AuthorPage: React.FC = () => {
                   {products.map((p) => (
                     <Link
                       key={p.id}
-                      to={`/product/${p.id}`}
+                      to={`/asset/${p.id}`}
                       className="group bg-white rounded-2xl border border-[#FFC9D2]/30 overflow-hidden hover:shadow-md transition-all"
                     >
                       <div className="aspect-square overflow-hidden bg-[#FFC9D2]/10">
@@ -245,8 +296,12 @@ export const AuthorPage: React.FC = () => {
                         )}
                       </div>
                       <div className="p-3">
-                        <p className="text-xs font-semibold text-[#040316] truncate">{p.name}</p>
-                        <p className="text-xs text-[#F65C88] font-bold mt-1">{formatPrice(p.price)}</p>
+                        <p className="text-xs font-semibold text-[#040316] truncate">
+                          {p.name}
+                        </p>
+                        <p className="text-xs text-[#F65C88] font-bold mt-1">
+                          {formatPrice(p.price)}
+                        </p>
                       </div>
                     </Link>
                   ))}

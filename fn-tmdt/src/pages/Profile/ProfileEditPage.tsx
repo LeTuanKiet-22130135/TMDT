@@ -2,14 +2,16 @@ import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Camera, X, Globe, Link2, ArrowLeft,
-  CheckCircle2, Loader2, Save, Lock,
+  CheckCircle2, Loader2, Save, Lock, RefreshCw,
 } from 'lucide-react';
+import { useMutation } from '@apollo/client/react';
 import { Header } from '../../components/layout/Header';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { BottomNav } from '../../components/layout/BottomNav';
 import { TagInput } from '../CreateProduct/components/TagInput';
 import { useProfileEditor } from './profile.logic';
 import { CropModal } from './components/CropModal';
+import { UPDATE_SHORTLINK_MUTATION } from '../../graphql/profile';
 
 const ACCEPT_IMG = 'image/jpeg,image/png,image/webp,image/gif';
 const AVATAR_ASPECT = 1;
@@ -55,6 +57,36 @@ export const ProfileEditPage: React.FC = () => {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const [cropTarget, setCropTarget] = useState<CropTarget | null>(null);
+
+  const [shortlinkInput, setShortlinkInput] = useState('');
+  const [shortlinkError, setShortlinkError] = useState('');
+  const [shortlinkSaved, setShortlinkSaved] = useState(false);
+  const [updateShortlink, { loading: shortlinkLoading }] = useMutation(UPDATE_SHORTLINK_MUTATION);
+
+  const shortlinkCooldownDays = (() => {
+    if (!profile.shortlinkUpdatedAt) return 0;
+    const updated = new Date(profile.shortlinkUpdatedAt);
+    const next = new Date(updated.getTime() + 10 * 24 * 60 * 60 * 1000);
+    const remaining = Math.ceil((next.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+    return remaining > 0 ? remaining : 0;
+  })();
+
+  const handleShortlinkSave = async () => {
+    setShortlinkError('');
+    const sl = shortlinkInput.trim().toLowerCase();
+    if (!sl) { setShortlinkError('Shortlink không được để trống'); return; }
+    if (sl.length > 32) { setShortlinkError('Tối đa 32 ký tự'); return; }
+    if (!/^[a-z0-9_-]+$/.test(sl)) { setShortlinkError('Chỉ chữ thường, số, - hoặc _'); return; }
+    try {
+      await updateShortlink({ variables: { shortlink: sl } });
+      setShortlinkInput('');
+      setShortlinkSaved(true);
+      setTimeout(() => setShortlinkSaved(false), 3000);
+      window.location.reload();
+    } catch (e: unknown) {
+      setShortlinkError((e as { message?: string }).message ?? 'Có lỗi xảy ra');
+    }
+  };
 
   const openCrop = (
     ref: React.RefObject<HTMLInputElement | null>,
@@ -249,6 +281,56 @@ export const ProfileEditPage: React.FC = () => {
                       </span>
                     </div>
                   </FieldWrapper>
+                </div>
+              </section>
+
+              {/* Shortlink */}
+              <section>
+                <SectionLabel>Shortlink hồ sơ</SectionLabel>
+                <div className="flex flex-col gap-4">
+                  <FieldWrapper label="Shortlink hiện tại">
+                    <div className={readonlyCls}>
+                      <Link2 size={13} className="shrink-0" />
+                      <span className="text-[#F65C88] font-medium">
+                        lumine.dev/{profile.shortlink || '(chưa đặt)'}
+                      </span>
+                    </div>
+                  </FieldWrapper>
+
+                  {shortlinkCooldownDays > 0 ? (
+                    <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-sm">
+                      <RefreshCw size={14} className="shrink-0" />
+                      Còn <strong>{shortlinkCooldownDays} ngày</strong> nữa mới được đổi shortlink (giới hạn 10 ngày/lần).
+                    </div>
+                  ) : (
+                    <FieldWrapper
+                      label="Shortlink mới"
+                      error={shortlinkError}
+                      hint="Chỉ chữ thường, số, dấu - hoặc _. Tối đa 32 ký tự."
+                    >
+                      <div className="flex gap-2">
+                        <div className="flex flex-1 items-center rounded-xl border border-outline-variant/40 bg-surface overflow-hidden focus-within:border-[#F65C88] focus-within:ring-2 focus-within:ring-[#FFC9D2]/40 transition-all">
+                          <span className="pl-4 text-sm text-on-surface-variant/50 select-none whitespace-nowrap">
+                            lumine.dev/
+                          </span>
+                          <input
+                            className="flex-1 px-2 py-2.5 bg-transparent text-sm text-on-surface outline-none placeholder-on-surface-variant/40"
+                            value={shortlinkInput}
+                            onChange={(e) => setShortlinkInput(e.target.value.toLowerCase())}
+                            placeholder={profile.shortlink || 'ten-cua-ban'}
+                            maxLength={32}
+                          />
+                        </div>
+                        <button
+                          onClick={handleShortlinkSave}
+                          disabled={shortlinkLoading || !shortlinkInput.trim()}
+                          className="px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-[#FF9FB1] to-[#DB2E50] text-white hover:opacity-90 disabled:opacity-50 transition-all shadow-sm whitespace-nowrap"
+                        >
+                          {shortlinkLoading ? <Loader2 size={14} className="animate-spin" /> : shortlinkSaved ? <CheckCircle2 size={14} /> : 'Lưu'}
+                        </button>
+                      </div>
+                    </FieldWrapper>
+                  )}
                 </div>
               </section>
 
