@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Star, ShoppingBag, Calendar, Globe, X, Link2, ArrowLeft, CheckCircle2, Crown } from 'lucide-react';
+import { useQuery, useMutation } from '@apollo/client/react';
 import { Header } from '../../components/layout/Header';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { BottomNav } from '../../components/layout/BottomNav';
 import { Badge } from '../../components/ui/Badge';
 import { useAuthorData } from './author.logic';
 import { resolveMediaUrl } from '../../lib/media';
+import {
+  IS_FOLLOWING_QUERY,
+  FOLLOW_MUTATION,
+  UNFOLLOW_MUTATION,
+  MY_FOLLOWED_AUTHORS_QUERY,
+} from '../../graphql/product';
 
 const formatDate = (iso: string) => {
   const d = new Date(iso);
@@ -19,7 +26,36 @@ const formatPrice = (v: number) =>
 export const AuthorPage: React.FC = () => {
   const { shortlink } = useParams<{ shortlink: string }>();
   const { profile, products, loading, bannerImage } = useAuthorData(shortlink ?? '');
-  const [isFollowing, setIsFollowing] = useState(false);
+  const token = localStorage.getItem('access_token');
+  const [followLoading, setFollowLoading] = useState(false);
+
+  const { data: followData, refetch: refetchFollow } = useQuery<{ isFollowing: boolean }>(
+    IS_FOLLOWING_QUERY,
+    { variables: { shortlink: shortlink ?? '' }, skip: !token || !shortlink, fetchPolicy: 'cache-and-network' }
+  );
+  const isFollowing = followData?.isFollowing ?? false;
+
+  const [followMutate] = useMutation(FOLLOW_MUTATION, {
+    refetchQueries: [{ query: MY_FOLLOWED_AUTHORS_QUERY }],
+  });
+  const [unfollowMutate] = useMutation(UNFOLLOW_MUTATION, {
+    refetchQueries: [{ query: MY_FOLLOWED_AUTHORS_QUERY }],
+  });
+
+  const handleFollowToggle = async () => {
+    if (!token) return;
+    setFollowLoading(true);
+    try {
+      if (isFollowing) {
+        await unfollowMutate({ variables: { shortlink } });
+      } else {
+        await followMutate({ variables: { shortlink } });
+      }
+      await refetchFollow();
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -122,14 +158,15 @@ export const AuthorPage: React.FC = () => {
                   </a>
                 )}
                 <button
-                  onClick={() => setIsFollowing(!isFollowing)}
-                  className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${
+                  onClick={handleFollowToggle}
+                  disabled={followLoading || !token}
+                  className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm disabled:opacity-60 ${
                     isFollowing
-                      ? 'bg-transparent border-2 border-[#F65C88] text-[#F65C88]'
+                      ? 'bg-transparent border-2 border-[#F65C88] text-[#F65C88] hover:bg-[#FFF1F3]'
                       : 'bg-gradient-to-r from-[#FF9FB1] to-[#DB2E50] text-white hover:opacity-90'
                   }`}
                 >
-                  {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
+                  {followLoading ? '...' : isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
                 </button>
               </div>
             </div>

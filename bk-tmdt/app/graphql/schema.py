@@ -23,6 +23,7 @@ from sqlalchemy import select, func
 from app.graphql.types import (
     AuthorType,
     CategoryType,
+    FollowedAuthorType,
     ProductConnection,
     ProductType,
     StoreConnection,
@@ -40,7 +41,7 @@ from app.graphql.types import (
     to_order_type,
     to_report_type,
 )
-from app.models import Category, User, Order, OrderItem, Report, Product, Store, RoleEnum, OrderStatusEnum
+from app.models import Category, User, Order, OrderItem, Report, Product, Store, RoleEnum, OrderStatusEnum, UserFollow
 
 
 
@@ -107,6 +108,78 @@ class Query:
             .distinct()
         )
         return [str(pid) for pid in db.scalars(stmt).all()]
+
+    @strawberry.field
+    def my_followed_authors(self, info: Info) -> list[FollowedAuthorType]:
+        user = _current_user(info)
+        if user is None:
+            return []
+        db = _db(info)
+        follows = db.scalars(select(UserFollow).where(UserFollow.follower_id == user.id)).all()
+        result = []
+        for f in follows:
+            author = db.get(User, f.followed_id)
+            if author is None or not author.is_active:
+                continue
+            count = db.scalar(
+                select(func.count(Product.id))
+                .join(Store, Product.store_id == Store.id)
+                .where(Store.owner_id == author.id)
+            ) or 0
+            result.append(FollowedAuthorType(
+                id=str(author.id),
+                shortlink=author.shortlink or '',
+                full_name=author.full_name,
+                avatar_url=author.avatar_url,
+                is_verified=author.is_verified,
+                is_gold=author.is_gold,
+                product_count=count,
+            ))
+        return result
+
+    @strawberry.field
+    def is_following(self, info: Info, shortlink: str) -> bool:
+        user = _current_user(info)
+        if user is None:
+            return False
+        db = _db(info)
+        author = db.scalar(select(User).where(User.shortlink == shortlink, User.is_active == True))
+        if author is None:
+            return False
+        return db.scalar(
+            select(func.count(UserFollow.id)).where(
+                UserFollow.follower_id == user.id,
+                UserFollow.followed_id == author.id,
+            )
+        ) > 0
+
+    @strawberry.field
+    def following_feed(self, info: Info, page: int = 1, limit: int = 20) -> ProductConnection:
+        user = _current_user(info)
+        if user is None:
+            return ProductConnection(items=[], total_items=0, total_pages=0)
+        db = _db(info)
+        safe_page = max(page, 1)
+        safe_limit = min(max(limit, 1), 50)
+        followed_ids = db.scalars(
+            select(UserFollow.followed_id).where(UserFollow.follower_id == user.id)
+        ).all()
+        if not followed_ids:
+            return ProductConnection(items=[], total_items=0, total_pages=0)
+        stmt = (
+            select(Product)
+            .join(Store, Product.store_id == Store.id)
+            .where(Store.owner_id.in_(followed_ids), Product.is_active == True)
+            .order_by(Product.created_at.desc())
+        )
+        total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+        items = db.scalars(stmt.offset((safe_page - 1) * safe_limit).limit(safe_limit)).all()
+        from math import ceil
+        return ProductConnection(
+            items=[to_product_type(p) for p in items],
+            total_items=total,
+            total_pages=ceil(total / safe_limit) if total else 0,
+        )
 
     @strawberry.field
     def author(self, info: Info, shortlink: str) -> AuthorType | None:

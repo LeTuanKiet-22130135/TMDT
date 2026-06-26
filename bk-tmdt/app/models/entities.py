@@ -116,6 +116,8 @@ class User(Base, TimestampMixin):
     comments: Mapped[list["Comment"]] = relationship(back_populates="user")
     reports_made: Mapped[list["Report"]] = relationship(back_populates="reporter", foreign_keys="Report.reporter_id")
     reports_against_user: Mapped[list["Report"]] = relationship(back_populates="reported_user", foreign_keys="Report.reported_user_id")
+    following: Mapped[list["UserFollow"]] = relationship(back_populates="follower", foreign_keys="UserFollow.follower_id", cascade="all, delete-orphan")
+    followers: Mapped[list["UserFollow"]] = relationship(back_populates="followed", foreign_keys="UserFollow.followed_id", cascade="all, delete-orphan")
 
 
 class Store(Base, TimestampMixin):
@@ -272,6 +274,18 @@ class Review(Base, CreatedAtMixin):
     user: Mapped[User] = relationship(back_populates="reviews")
     product: Mapped[Product] = relationship(back_populates="reviews")
     order_item: Mapped[OrderItem] = relationship(back_populates="review")
+
+
+class UserFollow(Base, CreatedAtMixin):
+    __tablename__ = "user_follows"
+    __table_args__ = (UniqueConstraint("follower_id", "followed_id"),)
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    follower_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    followed_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    follower: Mapped[User] = relationship("User", foreign_keys=[follower_id], back_populates="following")
+    followed: Mapped[User] = relationship("User", foreign_keys=[followed_id], back_populates="followers")
 
 
 class Comment(Base, TimestampMixin):

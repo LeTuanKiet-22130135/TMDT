@@ -42,6 +42,17 @@ class AuthorType:
 
 
 @strawberry.type
+class FollowedAuthorType:
+    id: str
+    shortlink: str
+    full_name: str
+    avatar_url: str | None
+    is_verified: bool
+    is_gold: bool
+    product_count: int
+
+
+@strawberry.type
 class StoreType:
     id: str
     owner_id: str

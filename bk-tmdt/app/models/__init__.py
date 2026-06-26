@@ -19,6 +19,7 @@ from app.models.entities import (
     ShoppingCart,
     Store,
     User,
+    UserFollow,
 )
 
 __all__ = [
@@ -42,4 +43,5 @@ __all__ = [
     "ShoppingCart",
     "Store",
     "User",
+    "UserFollow",
 ]
