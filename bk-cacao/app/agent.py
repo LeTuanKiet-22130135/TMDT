@@ -102,7 +102,45 @@ Given a Vietnamese user search prompt, extract structured fields:
 - max_price: maximum price in VND (null if not mentioned)
 - software_tags: list of software tags the product is compatible with. Only use values from: {VALID_SOFTWARE_TAGS}
 - format_tags: list of file format tags. Only use values from: {VALID_FORMAT_TAGS}
-- danbooru_tags: list of descriptive content/style tags in Danbooru convention WITHOUT underscores (use spaces for multi-word). These describe visual style, subject matter, mood, theme, character type, color palette, etc. Extract 4-10 tags that best capture the visual concept. Examples: ["anime girl", "pastel color", "chibi", "stream overlay", "vtuber", "watercolor", "fantasy", "dark theme", "cute", "live2d"]
+- danbooru_tags: EXHAUSTIVE list of Danbooru-style content/style tags describing the visual concept.
+  Extract 10-20 tags covering ALL of these categories (skip only if truly irrelevant):
+  1. SUBJECT: character type, species, gender (e.g. "anime girl", "catgirl", "chibi character", "vtuber")
+  2. STYLE: art style, rendering (e.g. "anime style", "watercolor", "pixel art", "flat design", "pastel")
+  3. MOOD/THEME: atmosphere, emotion (e.g. "cute", "dark", "fantasy", "cozy", "horror", "romantic")
+  4. COLOR: dominant colors/palette (e.g. "pastel color", "pink theme", "monochrome", "colorful")
+  5. USE-CASE: what it's used for (e.g. "stream overlay", "twitch alert", "profile picture", "thumbnail", "wallpaper", "vtuber model", "discord emote")
+  6. CONTENT CATEGORY: product type (e.g. "illustration", "character sheet", "brush set", "overlay", "avatar", "live2d model", "sticker", "emote pack")
+  7. RELATED CONCEPTS: anything inferrable (e.g. "streaming", "gaming", "idol", "moe", "kawaii", "japanese art")
+
+  Rules for danbooru_tags:
+  - English only, lowercase, spaces not underscores
+  - Be AGGRESSIVE with inference — "vtuber avatar pastel" → at minimum: ["vtuber", "avatar", "anime girl", "pastel color", "pink theme", "cute", "character sheet", "live2d", "streaming", "moe", "kawaii", "illustration"]
+  - Always include both specific ("chibi vtuber") and general ("chibi", "vtuber") variants
+  - Aim for 12-18 tags per query
+  - ONLY include tags you are highly confident about — do NOT guess vague tags
+  - Prefer precision over recall: 8 accurate tags > 18 uncertain tags
+
+- primary_tags: 1-3 CORE IDENTITY TAGS that are the absolute essence of the search.
+  These are the most specific, defining characteristics that MUST be present in matching products.
+  Rules:
+  - Only 1-3 tags maximum — choose only what is most essential
+  - Each tag must be HIGHLY SPECIFIC (e.g. "pink hair" not just "hair", "chibi vtuber" not just "vtuber")
+  - Cover identity dimensions: physical trait (hair color, clothing), subject type, or key use-case
+  - Match as close to Danbooru canonical tag format as possible (e.g. "pink hair", "cat ears", "white dress")
+  - Used for near-exact matching (90% similarity threshold): must be precise
+  - Examples:
+    * "illustration à style pastel cho vtuber" → primary_tags=["pastel color", "vtuber", "illustration"]
+    * "live2d model óc chó tai mèo" → primary_tags=["cat ears", "live2d model"]
+    * "brush set watercolor cho clip studio" → primary_tags=["watercolor", "brush set"]
+    * If prompt is vague like "illustration đẹp" → primary_tags=[] (empty, do not force)
+
+- high_confidence: set to true when the user's prompt is SPECIFIC and UNAMBIGUOUS:
+  * Mentions clear visual style (e.g. "chibi", "watercolor", "pixel art")
+  * Mentions clear subject (e.g. "anime girl", "catgirl", "vtuber model")
+  * Mentions clear use-case (e.g. "stream overlay", "discord emote")
+  * Mentions specific color palette or theme
+  → high_confidence = true means: trust the danbooru tags, apply strict matching
+  → high_confidence = false when prompt is vague, generic, or just a single word like "illustration đẹp"
 
 Rules:
 - Leave fields null/empty list if not mentioned or unclear
@@ -111,8 +149,6 @@ Rules:
 - "photoshop" → software_tags=["photoshop"], "clip studio" → ["clip-studio"], "live2d" → ["live2d-cubism"]
 - ".psd" → format_tags=["psd"], "png" → ["png"]
 - Extract multiple tags if user mentions multiple software/formats
-- For danbooru_tags: be creative and comprehensive — infer related tags even if not explicitly stated (e.g. "vtuber avatar" → ["vtuber", "avatar", "anime girl", "character sheet", "live2d"])
-- danbooru_tags use English only, lowercase, spaces not underscores
 """
 
 
@@ -122,9 +158,17 @@ class ProductSearchQuery(BaseModel):
     max_price: Optional[float] = Field(default=None, description="Maximum price in VND.")
     software_tags: list[str] = Field(default_factory=list, description="Software compatibility tags.")
     format_tags: list[str] = Field(default_factory=list, description="File format tags.")
+    primary_tags: list[str] = Field(
+        default_factory=list,
+        description="1-3 core identity tags that are the absolute essence of the search. Highly specific, near-exact Danbooru tags. Used for 90% similarity matching. E.g. ['pink hair', 'cat ears', 'vtuber'].",
+    )
     danbooru_tags: list[str] = Field(
         default_factory=list,
-        description="Descriptive content/style tags in Danbooru style WITHOUT underscores. Multi-word tags use spaces. English only.",
+        description="Precise content/style tags in Danbooru style. Only include tags you are confident about. English only, spaces not underscores.",
+    )
+    high_confidence: bool = Field(
+        default=False,
+        description="True when the user prompt is specific and unambiguous (clear style, subject, use-case). Enables strict tag-priority search.",
     )
 
 

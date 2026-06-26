@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Sparkles, SlidersHorizontal, RotateCcw, Loader2, Search, Globe, Check } from 'lucide-react';
 import { useLazyQuery } from '@apollo/client/react';
 import shiroEnable from '../../assets/images/texture/shiro_enable.png';
@@ -28,11 +28,10 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
-      className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-150 ${
-        selected
+      className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-150 ${selected
           ? 'bg-[#fff0f3] border-[#f65c88] text-[#db2e50]'
           : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700'
-      }`}
+        }`}
     >
       {label}
     </button>
@@ -44,10 +43,59 @@ function toggle(arr: string[], val: string): string[] {
 }
 
 const SHIRO_STEPS = [
-  { icon: Sparkles,  label: 'Shiro đang phân tích và tìm kiếm theo ngữ nghĩa...', done: 'Đã phân tích prompt' },
-  { icon: Search,    label: 'Đang khớp với từ khóa tiếng Việt...',                done: 'Đã thử tiếng Việt' },
-  { icon: Globe,     label: 'Chưa ra gì... thử hỏi bằng tiếng Anh xem?',         done: 'Đã thử tiếng Anh' },
+  { icon: Sparkles, label: 'Shiro đang phân tích và tìm kiếm theo ngữ nghĩa...', done: 'Đã phân tích prompt' },
+  { icon: Search, label: 'Đang khớp với từ khóa tiếng Việt...', done: 'Đã thử tiếng Việt' },
+  { icon: Globe, label: 'Chưa ra gì... thử hỏi bằng tiếng Anh xem?', done: 'Đã thử tiếng Anh' },
 ];
+
+const GLITCH_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*?';
+
+function GlitchText({ text, active }: { text: string; active: boolean }) {
+  const [displayed, setDisplayed] = useState(text);
+  const frameRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const resolveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const startGlitch = useCallback((original: string) => {
+    let iteration = 0;
+    const maxIterations = original.length * 3;
+    if (frameRef.current) clearInterval(frameRef.current);
+    frameRef.current = setInterval(() => {
+      setDisplayed(
+        original
+          .split('')
+          .map((char, idx) => {
+            if (char === ' ') return ' ';
+            if (idx < Math.floor(iteration / 3)) return original[idx];
+            return GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)];
+          })
+          .join('')
+      );
+      iteration++;
+      if (iteration >= maxIterations) {
+        if (frameRef.current) clearInterval(frameRef.current);
+        setDisplayed(original);
+      }
+    }, 35);
+  }, []);
+
+  useEffect(() => {
+    if (active && text) {
+      // Continuous scramble: re-trigger every 2s
+      startGlitch(text);
+      const loop = setInterval(() => startGlitch(text), 2000);
+      resolveRef.current = loop as unknown as ReturnType<typeof setTimeout>;
+      return () => {
+        if (frameRef.current) clearInterval(frameRef.current);
+        clearInterval(loop);
+        setDisplayed(text);
+      };
+    } else {
+      setDisplayed(text);
+    }
+  }, [active, text, startGlitch]);
+
+  return <span className="font-mono">{displayed}</span>;
+}
 
 function ShiroThinking({ visibleCount }: { visibleCount: number }) {
   return (
@@ -58,15 +106,13 @@ function ShiroThinking({ visibleCount }: { visibleCount: number }) {
         return (
           <div
             key={i}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-500 ${
-              isLast
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-500 ${isLast
                 ? 'bg-[#fff0f4] border border-[#f65c88]/30'
                 : 'bg-gray-50 border border-gray-100 opacity-60'
-            }`}
+              }`}
           >
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-              isLast ? 'bg-[#f65c88]/15 text-[#f65c88]' : 'bg-gray-200 text-gray-400'
-            }`}>
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${isLast ? 'bg-[#f65c88]/15 text-[#f65c88]' : 'bg-gray-200 text-gray-400'
+              }`}>
               {isLast ? (
                 <Loader2 size={13} className="animate-spin" />
               ) : (
@@ -157,26 +203,24 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ isOpen, activeTab, onT
       <div className="flex border-b border-gray-100">
         <button
           onClick={() => onTabChange('shiro')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-bold transition-all ${
-            activeTab === 'shiro'
+          className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-bold transition-all ${activeTab === 'shiro'
               ? 'text-transparent bg-clip-text bg-gradient-to-r from-[#f65c88] to-[#db2e50] border-b-2 border-[#f65c88]'
               : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-          }`}
+            }`}
         >
           <img
             src={activeTab === 'shiro' ? shiroEnable : shiroDisable}
             alt="Shiro"
             className={`w-5 h-5 object-contain ${activeTab === 'shiro' ? 'scale-110' : 'opacity-70'}`}
           />
-          Shiro AI
+          Shiro Agent
         </button>
         <button
           onClick={() => onTabChange('manual')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-bold transition-all ${
-            activeTab === 'manual'
+          className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-bold transition-all ${activeTab === 'manual'
               ? 'text-[#040316] border-b-2 border-[#040316]'
               : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-          }`}
+            }`}
         >
           <SlidersHorizontal size={16} className={activeTab === 'manual' ? 'text-[#040316]' : 'text-gray-400'} />
           Lọc thủ công
@@ -194,17 +238,42 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ isOpen, activeTab, onT
             <Sparkles size={15} className="text-[#f65c88]" />
             <h3 className="text-sm font-semibold text-gray-800">Mô tả điều bạn cần tìm</h3>
           </div>
-          <div className="relative">
+          <style>{`
+            @keyframes shiro-gradient {
+              0%   { background-position: 0% 50%; }
+              50%  { background-position: 100% 50%; }
+              100% { background-position: 0% 50%; }
+            }
+            .shiro-searching-wrap {
+              background: linear-gradient(270deg, #f65c88, #db2e50, #ff9fb1, #a855f7, #f65c88);
+              background-size: 400% 400%;
+              animation: shiro-gradient 2s ease infinite;
+              border-radius: 14px;
+              padding: 2px;
+            }
+            .shiro-searching-wrap textarea {
+              background: #fff8fa;
+            }
+          `}</style>
+          <div className={`relative ${aiLoading ? 'shiro-searching-wrap' : ''}`}>
             <textarea
-              value={aiPromptText}
+              value={aiLoading ? '' : aiPromptText}
               onChange={(e) => setAiPromptText(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleAISearch();
               }}
               disabled={aiLoading}
-              className="w-full bg-surface-container-low border border-pink-100 rounded-xl p-4 pr-12 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#f65c88]/50 resize-none h-28 disabled:opacity-60"
-              placeholder="Vd: illustration anime phong cách pastel dùng cho stream, file PSD..."
+              className={`w-full border rounded-xl p-4 pr-12 text-sm text-gray-800 focus:outline-none resize-none h-28 disabled:opacity-90 ${aiLoading
+                  ? 'bg-[#fff8fa] border-transparent focus:ring-0'
+                  : 'bg-surface-container-low border-pink-100 focus:ring-2 focus:ring-[#f65c88]/50'
+                }`}
+              placeholder={aiLoading ? '' : 'Vd: illustration anime phong cách pastel dùng cho stream, file PSD...'}
             />
+            {aiLoading && aiPromptText && (
+              <div className="absolute inset-0 p-4 pr-12 text-sm pointer-events-none overflow-hidden rounded-xl">
+                <GlitchText text={aiPromptText} active={aiLoading} />
+              </div>
+            )}
             <button
               onClick={handleAISearch}
               disabled={aiLoading || !aiPromptText.trim()}
@@ -237,11 +306,10 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ isOpen, activeTab, onT
                 <button
                   type="button"
                   onClick={() => set('isFreeOnly', !draft.isFreeOnly)}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
-                    draft.isFreeOnly
+                  className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${draft.isFreeOnly
                       ? 'bg-[#fff0f3] border-[#f65c88] text-[#db2e50]'
                       : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   ✦ Miễn phí
                 </button>
