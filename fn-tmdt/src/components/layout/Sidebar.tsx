@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, TrendingUp, LayoutGrid, Users, Settings, HelpCircle, Activity } from 'lucide-react';
+import { useSystemStatus } from '../../hooks/useSystemStatus';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@apollo/client/react';
 import { MY_FOLLOWED_AUTHORS_QUERY } from '../../graphql/product';
@@ -16,7 +17,7 @@ interface FollowedAuthor {
   productCount: number;
 }
 
-const STATUS_HINTS = [
+const STATUS_HINTS_NORMAL = [
   'Có gì đó trông lạ? Xem trạng thái hệ thống.',
   'Tải chậm hay lỗi kỳ lạ? Kiểm tra hệ thống đi.',
   'Không thấy nội dung? Hệ thống có thể đang nghỉ.',
@@ -39,11 +40,32 @@ const STATUS_HINTS = [
   'Hệ thống đôi khi cũng drama. Click để xem drama hôm nay.',
 ];
 
+const STATUS_HINTS_DOWN = [
+  '🚨 Phát hiện sự cố hệ thống. Xem chi tiết.',
+  '⚠️ Có dịch vụ đang gặp vấn đề. Kiểm tra ngay.',
+  'Shiro đang lo lắng. Hệ thống có gì đó không ổn.',
+  'Đèn đỏ bật rồi. Nhấn vào đây xem ai đang ngã.',
+  'Cái gì đó vừa ngã. Chưa biết cái gì.',
+  'Server đang giơ cờ trắng. Xem trạng thái đi.',
+  'Không phải mạng bạn đâu — backend đang drama đó.',
+  'Hệ thống đang kêu cứu nhỏ. Bạn có nghe không?',
+  'Lỗi không tự sửa đâu. Ai đó phải xem.',
+  'Something is on fire 🔥 — không phải theo nghĩa bóng.',
+  'Trạng thái hệ thống: đang thở dốc.',
+  'Ít nhất 1 dịch vụ vắng mặt không rõ lý do.',
+];
+
 export const Sidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
-  const statusHint = useMemo(() => STATUS_HINTS[Math.floor(Math.random() * STATUS_HINTS.length)], []);
+  const systemHealth = useSystemStatus();
+  const isDown = systemHealth === 'down' || systemHealth === 'degraded';
+  const statusHint = useMemo(() => {
+    const pool = isDown ? STATUS_HINTS_DOWN : STATUS_HINTS_NORMAL;
+    return pool[Math.floor(Math.random() * pool.length)];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDown]);
   const { t } = useTranslation();
   const token = localStorage.getItem('access_token');
 
@@ -158,8 +180,13 @@ export const Sidebar: React.FC = () => {
           to="/status"
           className="flex items-start gap-2 px-4 py-2 rounded-xl hover:bg-surface-bright transition-all group"
         >
-          <Activity size={12} className="mt-0.5 shrink-0 text-[#F65C88] opacity-60 group-hover:opacity-100 transition-opacity" />
-          <span className="text-[10px] text-on-surface-variant/40 group-hover:text-[#F65C88] leading-relaxed transition-colors">
+          <div className="relative mt-0.5 shrink-0">
+            <Activity size={12} className={`${isDown ? 'text-rose-500' : 'text-[#F65C88] opacity-60 group-hover:opacity-100'} transition-opacity`} />
+            {isDown && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+            )}
+          </div>
+          <span className={`text-[10px] leading-relaxed transition-colors ${isDown ? 'text-rose-500 font-medium' : 'text-on-surface-variant/40 group-hover:text-[#F65C88]'}`}>
             {statusHint}
           </span>
         </Link>

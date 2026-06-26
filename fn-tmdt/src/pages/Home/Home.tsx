@@ -22,12 +22,13 @@ import { BottomNav } from '../../components/layout/BottomNav';
 import { Sparkles, SlidersHorizontal, X } from 'lucide-react';
 import { LoadingSlime } from '../../components/ui/LoadingSlime';
 import { useSearchFilters } from '../../contexts/SearchFilterContext';
+import notFoundIcon from '../../assets/images/404-icon.png';
 import shiroEnable from '../../assets/images/texture/shiro_enable.png';
 import { useUserProfile } from '../../contexts/UserProfileContext';
 
 export const Home: React.FC = () => {
   const { t } = useTranslation();
-  const { activeFilters, clearFilters, aiResults, aiPrompt, clearAISearch } = useSearchFilters();
+  const { activeFilters, clearFilters, aiResults, aiPrompt, aiStep, aiSearchLoading, clearAISearch } = useSearchFilters();
   const { profile } = useUserProfile();
   const { products: allProducts, loading: allLoading, hasMore: allHasMore, reachedMax: allReachedMax, loadMore: allLoadMore, refresh: allRefresh } = useHomeProducts();
   const { products: filteredProducts, loading: filterLoading, isActive } = useFilteredProducts(activeFilters);
@@ -106,18 +107,31 @@ export const Home: React.FC = () => {
             </div>
           </section>
 
-          {loading && products.length === 0 ? (
+          {aiSearchLoading || (loading && products.length === 0) ? (
             <LoadingSlime />
           ) : products.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 text-[#040316]/40">
-              {isAISearch ? (
+            <div className="flex flex-col items-center justify-center py-20 select-none">
+              {isAISearch && aiStep === 'notfound' ? (
+                <>
+                  <img src={notFoundIcon} alt="404" className="w-32 h-32 object-contain mb-6 opacity-80" />
+                  <p className="text-lg font-bold text-[#040316] mb-1">Ôi thôi... chúng tôi đã cố lắm rồi.</p>
+                  <p className="text-sm text-[#040316]/50 mb-1">Shiro tìm tiếng Việt, tiếng Anh, nới lỏng hết mức rồi mà vẫn bó tay.</p>
+                  <p className="text-xs text-[#040316]/30 mb-5">"{aiPrompt}"</p>
+                  <button
+                    onClick={clearAISearch}
+                    className="px-5 py-2 rounded-full text-sm font-bold text-white bg-gradient-to-r from-[#FF9FB1] to-[#DB2E50] hover:opacity-90 transition-all shadow-sm"
+                  >
+                    Thử câu khác
+                  </button>
+                </>
+              ) : isAISearch ? (
                 <>
                   <img src={shiroEnable} alt="Shiro" className="w-10 h-10 object-contain opacity-40 mb-3" />
-                  <p className="text-sm">Shiro không tìm thấy sản phẩm phù hợp với "{aiPrompt}"</p>
+                  <p className="text-sm text-[#040316]/40">Shiro không tìm thấy sản phẩm phù hợp với "{aiPrompt}"</p>
                   <button onClick={clearAISearch} className="mt-3 text-xs text-[#f65c88] hover:underline">Xóa tìm kiếm</button>
                 </>
               ) : (
-                <p className="text-sm">Chưa có sản phẩm nào.</p>
+                <p className="text-sm text-[#040316]/40">Chưa có sản phẩm nào.</p>
               )}
             </div>
           ) : (

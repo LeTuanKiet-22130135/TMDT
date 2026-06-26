@@ -4,7 +4,7 @@ from uuid import UUID
 
 import strawberry
 
-from app.agent import ask_agent, extract_search_query
+from app.agent import ask_agent, extract_search_query, translate_to_english, ProductSearchQuery
 from app.database import get_db
 from app.models import Product, Store, User
 from app.recommendation import (
@@ -63,6 +63,76 @@ def _fetch_products_by_ids(db, product_ids: List[UUID]) -> dict:
     return {str(p.id): (p, u) for p, _s, u in rows}
 
 
+def _tag_fuzzy_score(query_tags: List[str], product_tags: List[str]) -> float:
+    """
+    Word-level overlap between query danbooru tags and product tags.
+    Substring-aware: "anime" matches "anime girl", "dark anime", etc.
+    Score = recall fraction of query words found in product tag pool.
+    """
+    if not query_tags or not product_tags:
+        return 0.0
+
+    _stop = {'the', 'a', 'an', 'and', 'or', 'of', 'in', 'for', 'to', 'is', 'are', 'with'}
+
+    q_words = set()
+    for t in query_tags:
+        q_words.update(w for w in t.lower().replace('_', ' ').split() if w not in _stop)
+
+    p_words = set()
+    for t in product_tags:
+        p_words.update(w for w in t.lower().replace('_', ' ').split() if w not in _stop)
+
+    if not q_words:
+        return 0.0
+
+    # Substring matching: query word matches if it appears inside any product word or vice versa
+    matched = sum(
+        1 for qw in q_words
+        if any(qw in pw or pw in qw for pw in p_words)
+    )
+    return matched / len(q_words)
+
+
+def _hybrid_search(
+    prompt: str,
+    danbooru_tags: List[str],
+    db,
+    limit: int = 20,
+    sem_weight: float = 0.6,
+    tag_weight: float = 0.4,
+) -> List[tuple]:
+    """
+    Combines pgvector semantic search with danbooru tag fuzzy matching.
+    Returns [(product, user, combined_score)] sorted desc.
+    """
+    candidates = search_by_embedding(db, prompt, limit=min(limit * 3, 60))
+    if not candidates:
+        return []
+
+    product_ids = [UUID(pid) for pid, _ in candidates]
+    product_map = _fetch_products_by_ids(db, product_ids)
+
+    results = []
+    for pid, sem_score in candidates:
+        if pid not in product_map:
+            continue
+        p, u = product_map[pid]
+        all_tags = list(p.user_tags or []) + list(p.ai_tags or [])
+        tag_score = _tag_fuzzy_score(danbooru_tags, all_tags) if danbooru_tags else 0.0
+        combined = sem_weight * sem_score + tag_weight * tag_score
+        results.append((p, u, combined))
+
+    results.sort(key=lambda x: x[2], reverse=True)
+    return results[:limit]
+
+
+@strawberry.type
+class AiSearchResult:
+    products: List[SuggestionProduct]
+    step: str  # hybrid | vi | en | relaxed | notfound
+    keyword_used: Optional[str]
+
+
 @strawberry.type
 class Query:
     @strawberry.field
@@ -87,34 +157,97 @@ class Query:
             return db.query(Product).filter(Product.is_active == True).count()
 
     @strawberry.field
-    def search_products_by_ai(self, prompt: str) -> List[SuggestionProduct]:
+    def search_products_by_ai(self, prompt: str) -> AiSearchResult:
         from sqlalchemy import or_
-        params = extract_search_query(prompt)
 
-        with get_db() as db:
+        def _run_query(params: ProductSearchQuery, db):
             q = (
                 db.query(Product, Store, User)
                 .join(Store, Product.store_id == Store.id)
                 .join(User, Store.owner_id == User.id)
                 .filter(Product.is_active == True)
             )
-
             if params.keyword:
                 q = q.filter(Product.name.ilike(f"%{params.keyword}%"))
-
             if params.min_price is not None:
                 q = q.filter(Product.price >= params.min_price)
             if params.max_price is not None:
                 q = q.filter(Product.price <= params.max_price)
-
             if params.software_tags:
                 q = q.filter(or_(*[Product.software_tags.contains([t]) for t in params.software_tags]))
             if params.format_tags:
                 q = q.filter(or_(*[Product.format_tags.contains([t]) for t in params.format_tags]))
+            return q.order_by(Product.created_at.desc()).limit(30).all()
 
-            rows = q.order_by(Product.created_at.desc()).limit(30).all()
+        params_vi = extract_search_query(prompt)
+        print(f"[Shiro/extract] danbooru={params_vi.danbooru_tags}")
 
-        return [_build_suggestion(p, u) for p, _s, u in rows]
+        # Step 1: Hybrid — semantic embedding + danbooru tag fuzzy reranking
+        print(f"[Shiro/step1-hybrid] trying semantic+tag search...")
+        with get_db() as db:
+            hybrid_rows = _hybrid_search(prompt, params_vi.danbooru_tags, db)
+        if hybrid_rows:
+            print(f"[Shiro/step1-hybrid] ✓ {len(hybrid_rows)} results")
+            return AiSearchResult(
+                products=[_build_suggestion(p, u) for p, u, _ in hybrid_rows],
+                step="hybrid",
+                keyword_used=params_vi.keyword,
+            )
+
+        # Step 2: Keyword Vietnamese
+        print(f"[Shiro/step2-vi] keyword={params_vi.keyword!r}")
+        with get_db() as db:
+            rows = _run_query(params_vi, db)
+        if rows:
+            print(f"[Shiro/step2-vi] ✓ {len(rows)} results")
+            return AiSearchResult(
+                products=[_build_suggestion(p, u) for p, _s, u in rows],
+                step="vi",
+                keyword_used=params_vi.keyword,
+            )
+
+        # Step 3: Keyword English
+        print(f"[Shiro/step3-en] translating...")
+        if params_vi.keyword:
+            en_keyword = translate_to_english(params_vi.keyword)
+            params_en = ProductSearchQuery(
+                keyword=en_keyword,
+                min_price=params_vi.min_price,
+                max_price=params_vi.max_price,
+                software_tags=params_vi.software_tags,
+                format_tags=params_vi.format_tags,
+            )
+            with get_db() as db:
+                rows = _run_query(params_en, db)
+            if rows:
+                print(f"[Shiro/step3-en] ✓ {len(rows)} results")
+                return AiSearchResult(
+                    products=[_build_suggestion(p, u) for p, _s, u in rows],
+                    step="en",
+                    keyword_used=en_keyword,
+                )
+
+        # Step 4: Relax — drop keyword, keep price/tags
+        print(f"[Shiro/step4-relax] relaxing filters...")
+        params_relaxed = ProductSearchQuery(
+            keyword=None,
+            min_price=params_vi.min_price,
+            max_price=params_vi.max_price,
+            software_tags=params_vi.software_tags,
+            format_tags=params_vi.format_tags,
+        )
+        with get_db() as db:
+            rows = _run_query(params_relaxed, db)
+        if rows:
+            print(f"[Shiro/step4-relax] ✓ {len(rows)} results")
+            return AiSearchResult(
+                products=[_build_suggestion(p, u) for p, _s, u in rows],
+                step="relaxed",
+                keyword_used=None,
+            )
+
+        print(f"[Shiro/step5] notfound — bó tay")
+        return AiSearchResult(products=[], step="notfound", keyword_used=None)
 
     @strawberry.field
     def semantic_search_products(self, query: str, limit: int = 20) -> List[SuggestionProduct]:

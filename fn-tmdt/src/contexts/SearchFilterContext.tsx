@@ -38,7 +38,10 @@ interface SearchFilterCtx {
   clearFilters: () => void;
   aiResults: AIProduct[] | null;
   aiPrompt: string;
-  applyAISearch: (results: AIProduct[], prompt: string) => void;
+  aiStep: string | null;
+  aiSearchLoading: boolean;
+  setAiSearchLoading: (v: boolean) => void;
+  applyAISearch: (results: AIProduct[], prompt: string, step?: string) => void;
   clearAISearch: () => void;
 }
 
@@ -48,6 +51,9 @@ const SearchFilterContext = createContext<SearchFilterCtx>({
   clearFilters: () => {},
   aiResults: null,
   aiPrompt: '',
+  aiStep: null,
+  aiSearchLoading: false,
+  setAiSearchLoading: () => {},
   applyAISearch: () => {},
   clearAISearch: () => {},
 });
@@ -56,10 +62,13 @@ export const SearchFilterProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [activeFilters, setActiveFilters] = useState<SearchFilters | null>(null);
   const [aiResults, setAiResults] = useState<AIProduct[] | null>(null);
   const [aiPrompt, setAiPrompt] = useState('');
+  const [aiStep, setAiStep] = useState<string | null>(null);
+  const [aiSearchLoading, setAiSearchLoading] = useState(false);
 
   const applyFilters = (f: SearchFilters) => {
     setAiResults(null);
     setAiPrompt('');
+    setAiStep(null);
     setActiveFilters(isFiltersEmpty(f) ? null : f);
   };
 
@@ -67,21 +76,26 @@ export const SearchFilterProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setActiveFilters(null);
     setAiResults(null);
     setAiPrompt('');
+    setAiStep(null);
   };
 
-  const applyAISearch = (results: AIProduct[], prompt: string) => {
+  const applyAISearch = (results: AIProduct[], prompt: string, step?: string) => {
     setActiveFilters(null);
     setAiResults(results);
     setAiPrompt(prompt);
+    setAiStep(step ?? null);
+    setAiSearchLoading(false);
   };
 
   const clearAISearch = () => {
     setAiResults(null);
     setAiPrompt('');
+    setAiStep(null);
+    setAiSearchLoading(false);
   };
 
   return (
-    <SearchFilterContext.Provider value={{ activeFilters, applyFilters, clearFilters, aiResults, aiPrompt, applyAISearch, clearAISearch }}>
+    <SearchFilterContext.Provider value={{ activeFilters, applyFilters, clearFilters, aiResults, aiPrompt, aiStep, aiSearchLoading, setAiSearchLoading, applyAISearch, clearAISearch }}>
       {children}
     </SearchFilterContext.Provider>
   );

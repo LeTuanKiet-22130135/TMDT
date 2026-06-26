@@ -52,11 +52,41 @@ def search_products(keyword: str) -> str:
     return "Sản phẩm tìm thấy:\n" + "\n".join(lines)
 
 
+def translate_to_english(text: str) -> str:
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "Translate the Vietnamese product search keywords to English. Return ONLY the translated keywords, nothing else."),
+        ("human", "{text}"),
+    ])
+    try:
+        chain = prompt | _get_llm()
+        result = chain.invoke({"text": text})
+        translated = result.content.strip()
+        print(f"[Shiro/translate] {text!r} → {translated!r}")
+        return translated
+    except Exception as e:
+        print(f"[Shiro/translate] ERROR: {e}")
+        return text
+
+
 def ask_agent(user_prompt: str) -> str:
+    print(f"\n{'='*60}")
+    print(f"[Shiro] PROMPT: {user_prompt}")
     try:
         response = _get_agent().invoke({"messages": [{"role": "user", "content": user_prompt}]})
+        for msg in response["messages"]:
+            cls = type(msg).__name__
+            if cls == "AIMessage":
+                if getattr(msg, "tool_calls", None):
+                    for tc in msg.tool_calls:
+                        print(f"[Shiro] TOOL CALL → {tc['name']}({tc['args']})")
+                elif msg.content:
+                    print(f"[Shiro] RESPONSE: {msg.content}")
+            elif cls == "ToolMessage":
+                print(f"[Shiro] TOOL RESULT: {str(msg.content)[:300]}")
+        print(f"{'='*60}\n")
         return response["messages"][-1].content
     except Exception as e:
+        print(f"[Shiro] ERROR: {e}\n{'='*60}\n")
         return f"Agent error: {e}"
 
 
@@ -72,6 +102,7 @@ Given a Vietnamese user search prompt, extract structured fields:
 - max_price: maximum price in VND (null if not mentioned)
 - software_tags: list of software tags the product is compatible with. Only use values from: {VALID_SOFTWARE_TAGS}
 - format_tags: list of file format tags. Only use values from: {VALID_FORMAT_TAGS}
+- danbooru_tags: list of descriptive content/style tags in Danbooru convention WITHOUT underscores (use spaces for multi-word). These describe visual style, subject matter, mood, theme, character type, color palette, etc. Extract 4-10 tags that best capture the visual concept. Examples: ["anime girl", "pastel color", "chibi", "stream overlay", "vtuber", "watercolor", "fantasy", "dark theme", "cute", "live2d"]
 
 Rules:
 - Leave fields null/empty list if not mentioned or unclear
@@ -80,6 +111,8 @@ Rules:
 - "photoshop" → software_tags=["photoshop"], "clip studio" → ["clip-studio"], "live2d" → ["live2d-cubism"]
 - ".psd" → format_tags=["psd"], "png" → ["png"]
 - Extract multiple tags if user mentions multiple software/formats
+- For danbooru_tags: be creative and comprehensive — infer related tags even if not explicitly stated (e.g. "vtuber avatar" → ["vtuber", "avatar", "anime girl", "character sheet", "live2d"])
+- danbooru_tags use English only, lowercase, spaces not underscores
 """
 
 
@@ -89,9 +122,15 @@ class ProductSearchQuery(BaseModel):
     max_price: Optional[float] = Field(default=None, description="Maximum price in VND.")
     software_tags: list[str] = Field(default_factory=list, description="Software compatibility tags.")
     format_tags: list[str] = Field(default_factory=list, description="File format tags.")
+    danbooru_tags: list[str] = Field(
+        default_factory=list,
+        description="Descriptive content/style tags in Danbooru style WITHOUT underscores. Multi-word tags use spaces. English only.",
+    )
 
 
 def extract_search_query(user_prompt: str) -> ProductSearchQuery:
+    print(f"\n{'='*60}")
+    print(f"[Shiro/extract] PROMPT: {user_prompt}")
     prompt = ChatPromptTemplate.from_messages([
         ("system", _EXTRACT_SYSTEM),
         ("human", "{input}"),
@@ -99,10 +138,11 @@ def extract_search_query(user_prompt: str) -> ProductSearchQuery:
     try:
         chain = prompt | _get_llm().with_structured_output(ProductSearchQuery)
         result = chain.invoke({"input": user_prompt})
-        # sanitize: only allow valid tag values
         result.software_tags = [t for t in (result.software_tags or []) if t in VALID_SOFTWARE_TAGS]
         result.format_tags = [t for t in (result.format_tags or []) if t in VALID_FORMAT_TAGS]
+        print(f"[Shiro/extract] RESULT: keyword={result.keyword!r} price=[{result.min_price}, {result.max_price}] software={result.software_tags} format={result.format_tags} danbooru={result.danbooru_tags}")
+        print(f"{'='*60}\n")
         return result
     except Exception as e:
-        print(f"[extract_search_query] {e}")
+        print(f"[Shiro/extract] ERROR: {e}\n{'='*60}\n")
         return ProductSearchQuery()

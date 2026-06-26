@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Sparkles, SlidersHorizontal, RotateCcw, Loader2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Sparkles, SlidersHorizontal, RotateCcw, Loader2, Search, Globe, Check } from 'lucide-react';
 import { useLazyQuery } from '@apollo/client/react';
 import shiroEnable from '../../assets/images/texture/shiro_enable.png';
 import shiroDisable from '../../assets/images/texture/shiro_disable.png';
@@ -43,21 +43,86 @@ function toggle(arr: string[], val: string): string[] {
   return arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
 }
 
+const SHIRO_STEPS = [
+  { icon: Sparkles,  label: 'Shiro đang phân tích và tìm kiếm theo ngữ nghĩa...', done: 'Đã phân tích prompt' },
+  { icon: Search,    label: 'Đang khớp với từ khóa tiếng Việt...',                done: 'Đã thử tiếng Việt' },
+  { icon: Globe,     label: 'Chưa ra gì... thử hỏi bằng tiếng Anh xem?',         done: 'Đã thử tiếng Anh' },
+];
+
+function ShiroThinking({ visibleCount }: { visibleCount: number }) {
+  return (
+    <div className="mt-4 flex flex-col gap-2.5 animate-in fade-in duration-300">
+      {SHIRO_STEPS.slice(0, visibleCount).map((step, i) => {
+        const Icon = step.icon;
+        const isLast = i === visibleCount - 1;
+        return (
+          <div
+            key={i}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-500 ${
+              isLast
+                ? 'bg-[#fff0f4] border border-[#f65c88]/30'
+                : 'bg-gray-50 border border-gray-100 opacity-60'
+            }`}
+          >
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+              isLast ? 'bg-[#f65c88]/15 text-[#f65c88]' : 'bg-gray-200 text-gray-400'
+            }`}>
+              {isLast ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Check size={13} />
+              )}
+            </div>
+            <div className="flex items-center gap-2 min-w-0">
+              <Icon size={12} className={isLast ? 'text-[#f65c88] shrink-0' : 'text-gray-400 shrink-0'} />
+              <span className={`text-xs ${isLast ? 'text-[#db2e50] font-medium' : 'text-gray-400 line-through'}`}>
+                {isLast ? step.label : step.done}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export const SearchPanel: React.FC<SearchPanelProps> = ({ isOpen, activeTab, onTabChange }) => {
-  const { applyFilters, clearFilters, activeFilters, applyAISearch } = useSearchFilters();
+  const { applyFilters, clearFilters, activeFilters, applyAISearch, setAiSearchLoading } = useSearchFilters();
   const [draft, setDraft] = useState<SearchFilters>(activeFilters ?? emptyFilters);
   const [aiPromptText, setAiPromptText] = useState('');
+  const [visibleSteps, setVisibleSteps] = useState(0);
 
-  const [runAISearch, { loading: aiLoading }] = useLazyQuery(AI_SEARCH_PRODUCTS_QUERY, {
+  const [runAISearch, { loading: aiLoading, data: aiData, error: aiError }] = useLazyQuery(AI_SEARCH_PRODUCTS_QUERY, {
     client: cacaoClient,
     fetchPolicy: 'network-only',
-    onCompleted: (data) => {
-      const results = data?.searchProductsByAi ?? [];
-      applyAISearch(results, aiPromptText.trim());
-    },
   });
 
-  if (!isOpen) return null;
+  const aiPromptRef = useRef('');
+
+  useEffect(() => {
+    if (!aiData) return;
+    const result = aiData.searchProductsByAi;
+    const products = result?.products ?? [];
+    const step = result?.step ?? 'notfound';
+    applyAISearch(products, aiPromptRef.current, step);
+  }, [aiData]);
+
+  useEffect(() => {
+    if (aiError) setAiSearchLoading(false);
+  }, [aiError]);
+
+  useEffect(() => {
+    if (!aiLoading) {
+      setVisibleSteps(0);
+      return;
+    }
+    setVisibleSteps(1);
+    const t1 = setTimeout(() => setVisibleSteps(2), 2500);
+    const t2 = setTimeout(() => setVisibleSteps(3), 5500);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [aiLoading]);
+
+  if (!isOpen && !aiLoading) return null;
 
   const set = <K extends keyof SearchFilters>(key: K, val: SearchFilters[K]) =>
     setDraft((prev) => ({ ...prev, [key]: val }));
@@ -72,6 +137,8 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ isOpen, activeTab, onT
   const handleAISearch = () => {
     const prompt = aiPromptText.trim();
     if (!prompt || aiLoading) return;
+    aiPromptRef.current = prompt;
+    setAiSearchLoading(true);
     runAISearch({ variables: { prompt } });
   };
 
@@ -85,7 +152,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ isOpen, activeTab, onT
   ].filter(Boolean).length;
 
   return (
-    <div className="absolute top-[120%] left-0 w-[600px] bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+    <div className={`absolute top-[120%] left-0 w-[600px] bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-50${!isOpen ? ' invisible pointer-events-none' : ''}`}>
       {/* Tabs */}
       <div className="flex border-b border-gray-100">
         <button
@@ -150,10 +217,14 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ isOpen, activeTab, onT
               )}
             </button>
           </div>
-          <p className="mt-2 text-[11px] text-gray-400">
-            Shiro hiểu ngôn ngữ tự nhiên — thử mô tả phong cách, phần mềm, định dạng, giá tiền...
-            <span className="ml-1 text-gray-300">Ctrl+Enter để tìm</span>
-          </p>
+          {aiLoading && visibleSteps > 0 ? (
+            <ShiroThinking visibleCount={visibleSteps} />
+          ) : (
+            <p className="mt-2 text-[11px] text-gray-400">
+              Shiro hiểu ngôn ngữ tự nhiên — thử mô tả phong cách, phần mềm, định dạng, giá tiền...
+              <span className="ml-1 text-gray-300">Ctrl+Enter để tìm</span>
+            </p>
+          )}
         </div>
       ) : (
         <div className="animate-in fade-in zoom-in-95 duration-300">
