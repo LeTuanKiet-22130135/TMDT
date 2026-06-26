@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { useMutation } from '@apollo/client/react';
 import { Mail, Lock, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { LOGIN_MUTATION } from '../../services/graphql/auth.graphql';
 import Input from './Input';
 import Button from './Button';
 import { Link } from 'react-router-dom';
@@ -25,24 +23,23 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const [login, { loading }] = useMutation(LOGIN_MUTATION, {
-    onCompleted: (data: any) => {
-      const { accessToken } = data.login;
-      localStorage.setItem('access_token', accessToken);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setLoading(true);
+    try {
+      const data = await AuthService.login({ email, password });
+      localStorage.setItem('access_token', data.access_token);
       notifyLogin();
       onSuccess();
       onClose();
-    },
-    onError: (error) => {
-      setErrorMsg(error.message || t('auth.login.error'));
+    } catch (error: any) {
+      setErrorMsg(error.response?.data?.detail || t('auth.login.error'));
+    } finally {
+      setLoading(false);
     }
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg('');
-    login({ variables: { email, password } });
   };
 
   const handleGoogleSuccess = async (credentialResponse: any) => {

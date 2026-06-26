@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { useMutation } from '@apollo/client/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock } from 'lucide-react';
-import { LOGIN_MUTATION } from '../../services/graphql/auth.graphql';
 import { AuthService } from '../../services/api/auth.service';
 import AuthLayout from '../../components/Auth/AuthLayout';
 import Input from '../../components/Auth/Input';
@@ -20,20 +18,25 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { notifyLogin } = useUserProfile();
 
-  const [login, { loading }] = useMutation(LOGIN_MUTATION, {
-    onCompleted: (data: any) => {
-      const { accessToken } = data.login;
-      localStorage.setItem('access_token', accessToken);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setLoading(true);
+    try {
+      const data = await AuthService.login({ email, password });
+      localStorage.setItem('access_token', data.access_token);
       notifyLogin();
       navigate('/');
-    },
-    onError: (error) => {
-      setErrorMsg(error.message || t('auth.login.error'));
+    } catch (error: any) {
+      setErrorMsg(error.response?.data?.detail || t('auth.login.error'));
+    } finally {
+      setLoading(false);
     }
-  });
+  };
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
@@ -57,12 +60,6 @@ const LoginPage: React.FC = () => {
         setErrorMsg(error.response?.data?.detail || t('auth.login.error'));
       }
     }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg('');
-    login({ variables: { email, password } });
   };
 
   return (
