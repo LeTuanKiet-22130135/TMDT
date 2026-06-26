@@ -19,3 +19,9 @@ def _db(info: Info) -> Session:
 
 def _background_tasks(info: Info) -> BackgroundTasks:
     return info.context["background_tasks"]
+
+def require_auth(info: Info) -> User:
+    user = info.context.get("current_user")
+    if not user:
+        raise Exception("Authentication required")
+    return user
