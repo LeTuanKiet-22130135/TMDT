@@ -1,5 +1,18 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+const TAGLINES = [
+  'Shiro tìm được rồi đấy — còn bạn thì chưa.',
+  'Pixels đẹp tới mức bạn không nỡ dùng vào slide thuyết trình.',
+  'Nghệ thuật số. Không cần máy in. Không cần giải thích.',
+  'Tác giả đổ mồ hôi, bạn thêm vào giỏ — ai cũng vui.',
+  'Cảm hứng không gõ cửa, nó nằm sẵn ở đây rồi.',
+  'Đẹp theo nghĩa đen. Theo nghĩa bóng cũng được.',
+  'File .zip nhỏ, ước mơ lớn.',
+  'Mua một lần, dùng mãi — trừ khi bạn đổi style mỗi tuần.',
+  'Các tác giả Việt đang chờ bạn khám phá. Đừng để họ chờ lâu.',
+  'Không gian sáng tạo của bạn, nhưng đẹp hơn hẳn.',
+];
 import { useHomeProducts } from './home.logic';
 import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry';
 import { AssetCard } from './AssetCard';
@@ -12,6 +25,7 @@ import { LoadingSlime } from '../../components/ui/LoadingSlime';
 export const Home: React.FC = () => {
   const { t } = useTranslation();
   const { products, loading, hasMore, loadMore } = useHomeProducts();
+  const [tagline] = useState(() => TAGLINES[Math.floor(Math.random() * TAGLINES.length)]);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,7 +62,7 @@ export const Home: React.FC = () => {
                   {t('home.title')}
                 </h1>
                 <p className="text-gray-500 max-w-xl text-lg leading-relaxed">
-                  {t('home.subtitle')}
+                  {tagline}
                 </p>
               </div>
             </div>

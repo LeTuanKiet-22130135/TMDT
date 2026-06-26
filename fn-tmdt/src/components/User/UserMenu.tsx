@@ -69,9 +69,9 @@ export const UserMenu: React.FC = () => {
               <User size={18} className="mr-3 text-gray-400" />
               <span className="font-medium text-sm">{t('user.menu.profile')}</span>
             </Link>
-            <Link to="/orders" onClick={() => setIsOpen(false)} className="flex items-center px-6 py-3 hover:bg-gray-50 transition-colors text-gray-700">
+            <Link to="/library" onClick={() => setIsOpen(false)} className="flex items-center px-6 py-3 hover:bg-gray-50 transition-colors text-gray-700">
               <Package size={18} className="mr-3 text-gray-400" />
-              <span className="font-medium text-sm">{t('user.menu.orders')}</span>
+              <span className="font-medium text-sm">Lịch sử mua hàng</span>
             </Link>
             <Link to={`/author/${profile.shortlink}`} onClick={() => setIsOpen(false)} className="flex items-center px-6 py-3 hover:bg-gray-50 transition-colors text-gray-700">
               <Store size={18} className="mr-3 text-gray-400" />

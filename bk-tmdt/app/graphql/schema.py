@@ -74,6 +74,24 @@ class Query:
         return to_user_type(user)
 
     @strawberry.field
+    def my_purchased_products(self, info: Info) -> list[ProductType]:
+        user = _current_user(info)
+        if user is None:
+            return []
+        db = _db(info)
+        stmt = (
+            select(Product)
+            .join(OrderItem, OrderItem.product_id == Product.id)
+            .join(Order, OrderItem.order_id == Order.id)
+            .where(
+                Order.user_id == user.id,
+                Order.status.in_([OrderStatusEnum.PAID, OrderStatusEnum.COMPLETED]),
+            )
+            .distinct()
+        )
+        return [to_product_type(p) for p in db.scalars(stmt).all()]
+
+    @strawberry.field
     def my_purchased_product_ids(self, info: Info) -> list[strawberry.ID]:
         user = _current_user(info)
         if user is None:

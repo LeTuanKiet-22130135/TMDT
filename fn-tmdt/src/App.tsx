@@ -16,6 +16,7 @@ import AuthorPage from "./pages/Author/AuthorPage"
 import ProfileEditPage from "./pages/Profile/ProfileEditPage"
 import CheckoutPage from "./pages/Checkout/CheckoutPage"
 import CheckoutResultPage from "./pages/Checkout/CheckoutResultPage"
+import LibraryPage from "./pages/Library/LibraryPage"
 
 function CursorGlow() {
   const glowRef = useRef<HTMLDivElement>(null);
@@ -76,6 +77,7 @@ function App() {
           <Route path="/profile" element={<ProfileEditPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/checkout/result" element={<CheckoutResultPage />} />
+          <Route path="/library" element={<LibraryPage />} />
         </Routes>
       </Router>
       </CartProvider>

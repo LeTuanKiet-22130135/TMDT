@@ -6,6 +6,22 @@ export const MY_PURCHASED_IDS_QUERY = gql`
   }
 `;
 
+export const MY_PURCHASED_PRODUCTS_QUERY = gql`
+  query MyPurchasedProducts {
+    myPurchasedProducts {
+      id
+      name
+      description
+      price
+      imageUrls
+      mainFileUrl
+      store {
+        name
+      }
+    }
+  }
+`;
+
 export const PRODUCT_DETAIL_QUERY = gql`
   query ProductDetail($productId: UUID!) {
     product(productId: $productId) {
