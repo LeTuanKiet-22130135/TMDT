@@ -13,18 +13,31 @@ const TAGLINES = [
   'Các tác giả Việt đang chờ bạn khám phá. Đừng để họ chờ lâu.',
   'Không gian sáng tạo của bạn, nhưng đẹp hơn hẳn.',
 ];
-import { useHomeProducts } from './home.logic';
+import { useHomeProducts, useFilteredProducts, usePersonalizedFeed } from './home.logic';
 import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry';
 import { AssetCard } from './AssetCard';
 import { Header } from '../../components/layout/Header';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { BottomNav } from '../../components/layout/BottomNav';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, SlidersHorizontal, X } from 'lucide-react';
 import { LoadingSlime } from '../../components/ui/LoadingSlime';
+import { useSearchFilters } from '../../contexts/SearchFilterContext';
+import { useUserProfile } from '../../contexts/UserProfileContext';
 
 export const Home: React.FC = () => {
   const { t } = useTranslation();
-  const { products, loading, hasMore, loadMore } = useHomeProducts();
+  const { activeFilters, clearFilters } = useSearchFilters();
+  const { profile } = useUserProfile();
+  const { products: allProducts, loading: allLoading, hasMore: allHasMore, reachedMax: allReachedMax, loadMore: allLoadMore, refresh: allRefresh } = useHomeProducts();
+  const { products: filteredProducts, loading: filterLoading, isActive } = useFilteredProducts(activeFilters);
+  const { products: personalizedProducts, loading: personalizedLoading, hasMore: pHasMore, reachedMax: pReachedMax, loadMore: pLoadMore, refresh: pRefresh } = usePersonalizedFeed(profile.id || null);
+  const isPersonalized = !!profile.id && !isActive;
+  const products = isActive ? filteredProducts : (isPersonalized ? personalizedProducts : allProducts);
+  const loading = isActive ? filterLoading : (isPersonalized ? personalizedLoading : allLoading);
+  const hasMore = isPersonalized ? pHasMore : allHasMore;
+  const reachedMax = isPersonalized ? pReachedMax : allReachedMax;
+  const loadMore = isPersonalized ? pLoadMore : allLoadMore;
+  const refresh = isPersonalized ? pRefresh : allRefresh;
   const [tagline] = useState(() => TAGLINES[Math.floor(Math.random() * TAGLINES.length)]);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -54,10 +67,25 @@ export const Home: React.FC = () => {
           <section className="mb-12">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#f65c88]/10 text-[#f65c88] text-xs font-bold uppercase tracking-wider mb-4 border border-[#f65c88]/20">
-                  <Sparkles size={14} />
-                  Top Picks
-                </div>
+                {isActive ? (
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#040316]/8 text-[#040316] text-xs font-bold uppercase tracking-wider mb-4 border border-[#040316]/15">
+                    <SlidersHorizontal size={13} />
+                    Đang lọc
+                    <button onClick={clearFilters} className="ml-0.5 hover:text-[#f65c88] transition-colors">
+                      <X size={13} />
+                    </button>
+                  </div>
+                ) : isPersonalized ? (
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#f65c88]/10 text-[#f65c88] text-xs font-bold uppercase tracking-wider mb-4 border border-[#f65c88]/20">
+                    <Sparkles size={14} />
+                    Dành cho bạn
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#f65c88]/10 text-[#f65c88] text-xs font-bold uppercase tracking-wider mb-4 border border-[#f65c88]/20">
+                    <Sparkles size={14} />
+                    Top Picks
+                  </div>
+                )}
                 <h1 className="font-headline text-4xl md:text-5xl font-extrabold tracking-tight text-[#040316] mb-3">
                   {t('home.title')}
                 </h1>
@@ -84,12 +112,24 @@ export const Home: React.FC = () => {
                 </Masonry>
               </ResponsiveMasonry>
 
-              {/* Infinite scroll sentinel */}
-              <div ref={sentinelRef} className="py-8 flex justify-center">
+              {/* Infinite scroll sentinel — hidden when filter active */}
+              <div ref={isActive ? undefined : sentinelRef} className="py-8 flex flex-col items-center gap-3">
                 {loading && (
                   <div className="w-6 h-6 border-2 border-[#F65C88]/30 border-t-[#F65C88] rounded-full animate-spin" />
                 )}
-                {!hasMore && products.length > 0 && (
+                {reachedMax && (
+                  <>
+                    <p className="text-xs text-[#040316]/40">Đã hiển thị 100 sản phẩm</p>
+                    <button
+                      onClick={refresh}
+                      className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-[#FF9FB1] to-[#DB2E50] text-white hover:opacity-90 transition-all shadow-sm"
+                    >
+                      <Sparkles size={14} />
+                      Làm mới
+                    </button>
+                  </>
+                )}
+                {!hasMore && !reachedMax && products.length > 0 && (
                   <p className="text-xs text-[#040316]/30">Đã hiển thị tất cả sản phẩm</p>
                 )}
               </div>

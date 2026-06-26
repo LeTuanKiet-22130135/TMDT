@@ -18,6 +18,8 @@ import { CommentsModal } from '../components/ui/CommentsModal';
 import { useCart } from '../contexts/CartContext';
 import { resolveMediaUrl } from '../lib/media';
 import { usePurchasedProductIds } from '../hooks/usePurchasedProductIds';
+import { useUserProfile } from '../contexts/UserProfileContext';
+import { trackEvent } from '../services/redService';
 
 interface ProductDetail {
   id: string;
@@ -46,6 +48,7 @@ export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { addItem, openCart, items, addedProductId } = useCart();
   const purchasedIds = usePurchasedProductIds();
+  const { profile } = useUserProfile();
 
   const { data, loading, error } = useQuery<{ product: ProductDetail | null }>(
     PRODUCT_DETAIL_QUERY,
@@ -79,12 +82,17 @@ export const ProductDetailPage: React.FC = () => {
         await unfollowMutate({ variables: { shortlink: ownerShortlink } });
       } else {
         await followMutate({ variables: { shortlink: ownerShortlink } });
+        if (product) trackEvent(profile.id, product.id, 'follow');
       }
       await refetchFollow();
     } finally {
       setFollowLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (product?.id && profile.id) trackEvent(profile.id, product.id, 'view');
+  }, [product?.id, profile.id]);
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
@@ -135,6 +143,7 @@ export const ProductDetailPage: React.FC = () => {
       image: resolveMediaUrl(product.imageUrls[0]),
       storeName: product.store.name,
     });
+    trackEvent(profile.id, product.id, 'cart');
   };
 
   const handlePostComment = (e: React.FormEvent) => {

@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { XCircle, Loader2, ShoppingBag } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
 import { formatPrice } from '../../components/Cart/cart.logic';
+import { useUserProfile } from '../../contexts/UserProfileContext';
+import { trackEvent } from '../../services/redService';
 import shiroEnable from '../../assets/images/texture/shiro_enable.png';
 
 const API = import.meta.env.VITE_API_URL || '';
@@ -132,10 +134,17 @@ type Status = 'verifying' | 'success' | 'failed';
 export const CheckoutResultPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { clearCart } = useCart();
+  const { clearCart, items } = useCart();
+  const { profile } = useUserProfile();
   const [status, setStatus] = useState<Status>('verifying');
   const [message, setMessage] = useState('');
   const [amount, setAmount] = useState(0);
+
+  // Refs to avoid stale closure in the once-only verify effect
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const userIdRef = useRef(profile.id);
+  userIdRef.current = profile.id;
 
   useEffect(() => {
     const verify = async () => {
@@ -152,7 +161,9 @@ export const CheckoutResultPage: React.FC = () => {
           setStatus('success');
           setMessage(data.message);
           setAmount(data.amount);
+          const purchased = [...itemsRef.current];
           clearCart();
+          purchased.forEach((item) => trackEvent(userIdRef.current, item.productId, 'purchase'));
         } else {
           setStatus('failed');
           setMessage(data.message);

@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { client } from './apollo'
 import { CartProvider } from './contexts/CartContext'
 import { UserProfileProvider } from './contexts/UserProfileContext'
+import { SearchFilterProvider } from './contexts/SearchFilterContext'
 import Home from "./pages/Home"
 import ProductDetailPage from "./pages/ProductDetailPage"
 import CustomRequestsPage from "./pages/CustomRequestsPage"
@@ -63,6 +64,7 @@ function App() {
   return (
     <ApolloProvider client={client}>
       <UserProfileProvider>
+      <SearchFilterProvider>
       <CartProvider>
       <CursorGlow />
       <Router>
@@ -83,6 +85,7 @@ function App() {
         </Routes>
       </Router>
       </CartProvider>
+      </SearchFilterProvider>
       </UserProfileProvider>
     </ApolloProvider>
   )

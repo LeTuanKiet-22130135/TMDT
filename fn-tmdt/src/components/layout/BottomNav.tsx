@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Compass, Plus, LayoutGrid, User } from "lucide-react";
+import { Home, Compass, Plus, User } from "lucide-react";
 
 export const BottomNav: React.FC = () => {
   const location = useLocation();

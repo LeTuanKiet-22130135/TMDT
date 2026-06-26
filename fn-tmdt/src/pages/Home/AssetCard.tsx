@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Check } from 'lucide-react';
 import type { HomeProduct } from './home.logic';
 import { resolveMediaUrl } from '../../lib/media';
 import { useCart } from '../../contexts/CartContext';
 import { usePurchasedProductIds } from '../../hooks/usePurchasedProductIds';
+import { useUserProfile } from '../../contexts/UserProfileContext';
+import { trackEvent } from '../../services/redService';
 
 interface AssetCardProps {
   product: HomeProduct;
@@ -14,6 +16,8 @@ export const AssetCard: React.FC<AssetCardProps> = ({ product }) => {
   const navigate = useNavigate();
   const { addItem, items } = useCart();
   const purchasedIds = usePurchasedProductIds();
+  const { profile } = useUserProfile();
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   const inCart = items.some((i) => i.productId === product.id);
   const purchased = purchasedIds.has(product.id);
@@ -36,6 +40,7 @@ export const AssetCard: React.FC<AssetCardProps> = ({ product }) => {
       image: resolveMediaUrl(product.imageUrl),
       storeName: product.authorName,
     });
+    trackEvent(profile.id, product.id, 'cart');
   };
 
   return (
@@ -46,18 +51,28 @@ export const AssetCard: React.FC<AssetCardProps> = ({ product }) => {
       <div className="relative rounded-2xl overflow-hidden bg-[#f5f5f5] transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-1">
 
         {/* Image */}
-        {product.imageUrl ? (
-          <img
-            className="w-full h-auto block object-cover transition-transform duration-700 group-hover:scale-105"
-            alt={product.name}
-            src={resolveMediaUrl(product.imageUrl)}
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full aspect-square bg-gradient-to-br from-[#FFC9D2]/30 to-[#9AC6FF]/20 flex items-center justify-center">
-            <span className="text-[#040316]/20 text-xs">No image</span>
-          </div>
-        )}
+        <div className="relative w-full">
+          {product.imageUrl ? (
+            <>
+              {!imgLoaded && (
+                <div className="w-full aspect-[2/3] bg-gradient-to-br from-[#f5f5f5] via-[#ececec] to-[#f5f5f5] animate-pulse" />
+              )}
+              <img
+                className={`w-full block object-cover transition-all duration-500 group-hover:scale-105 ${
+                  imgLoaded ? 'h-auto opacity-100' : 'absolute inset-0 w-full h-full opacity-0'
+                }`}
+                alt={product.name}
+                src={resolveMediaUrl(product.imageUrl)}
+                loading="lazy"
+                onLoad={() => setImgLoaded(true)}
+              />
+            </>
+          ) : (
+            <div className="w-full aspect-square bg-gradient-to-br from-[#FFC9D2]/30 to-[#9AC6FF]/20 flex items-center justify-center">
+              <span className="text-[#040316]/20 text-xs">No image</span>
+            </div>
+          )}
+        </div>
 
         {/* Bottom overlay */}
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pb-3 pt-6 flex flex-col gap-1 transition-all duration-300 group-hover:pt-10">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, Bell, ShoppingCart } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LoginModal } from "../Auth/LoginModal";
 import { UserMenu } from "../User/UserMenu";
@@ -12,8 +12,6 @@ import { useUserProfile } from "../../contexts/UserProfileContext";
 
 export const Header: React.FC = () => {
   const { t } = useTranslation();
-  const location = useLocation();
-  const isHome = location.pathname === "/";
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const { profile } = useUserProfile();

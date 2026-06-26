@@ -17,6 +17,24 @@ CACAO_BASE_URL = os.getenv("CACAO_URL", "http://localhost:8001")
 async def _trigger_ai_tagging(product_id: str, image_url: str, callback_url: str) -> None:
     print(f"[AI tagging] disabled, skipping trigger for {product_id}")
 
+async def _trigger_cacao_index(product_id: str) -> None:
+    """Fire-and-forget: ask bk-cacao to build tag_vector + embedding for new product."""
+    query = """
+        mutation IndexProduct($productId: String!) {
+            indexProduct(productId: $productId)
+        }
+    """
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(
+                f"{CACAO_BASE_URL}/graphql",
+                json={"query": query, "variables": {"productId": product_id}},
+            )
+            if resp.status_code != 200:
+                print(f"[cacao index] HTTP {resp.status_code} for {product_id}")
+    except Exception as e:
+        print(f"[cacao index] failed for {product_id}: {e}")
+
 @strawberry.type
 class ProductMutation:
     @strawberry.mutation
@@ -74,9 +92,11 @@ class ProductMutation:
         if image_urls:
             from app.core.config import settings
             tmdt_base = os.getenv("TMDT_INTERNAL_URL", "http://localhost:8000")
-            product_id = str(product.id)
+            product_id_str = str(product.id)
             first_image = image_urls[0]
-            callback_url = f"{tmdt_base}/api/v1/internal/products/{product_id}/ai-tags"
-            asyncio.create_task(_trigger_ai_tagging(product_id, first_image, callback_url))
+            callback_url = f"{tmdt_base}/api/v1/internal/products/{product_id_str}/ai-tags"
+            asyncio.create_task(_trigger_ai_tagging(product_id_str, first_image, callback_url))
+
+        asyncio.create_task(_trigger_cacao_index(str(product.id)))
 
         return to_product_type(product)
