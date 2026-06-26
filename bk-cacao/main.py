@@ -1,5 +1,7 @@
+import os
 from contextlib import asynccontextmanager
 
+import httpx
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -61,6 +63,22 @@ app.include_router(GraphQLRouter(schema), prefix="/graphql")
 @app.get("/")
 def health():
     return {"status": "ok", "service": "bk-cacao"}
+
+
+@app.get("/health/ollama")
+async def check_ollama():
+    ollama_url = os.getenv("OLLAMA_API", "http://localhost:11434")
+    api_key = os.getenv("OLLAMA_API_KEY")
+    model = os.getenv("MODEL", "llama3")
+    headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(f"{ollama_url}/api/tags", headers=headers)
+        if resp.status_code == 200:
+            return {"status": "ok", "url": ollama_url, "model": model}
+        return {"status": "error", "code": resp.status_code, "url": ollama_url}
+    except Exception as e:
+        return {"status": "error", "message": str(e), "url": ollama_url}
 
 
 if __name__ == "__main__":

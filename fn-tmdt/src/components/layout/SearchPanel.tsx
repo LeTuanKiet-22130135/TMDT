@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { Sparkles, SlidersHorizontal, RotateCcw } from 'lucide-react';
+import { Sparkles, SlidersHorizontal, RotateCcw, Loader2 } from 'lucide-react';
+import { useLazyQuery } from '@apollo/client/react';
 import shiroEnable from '../../assets/images/texture/shiro_enable.png';
 import shiroDisable from '../../assets/images/texture/shiro_disable.png';
 import { LICENSES, SOFTWARES, FILE_FORMATS } from '../../pages/CreateProduct/createProduct.logic';
 import { useSearchFilters, emptyFilters } from '../../contexts/SearchFilterContext';
 import type { SearchFilters } from '../../contexts/SearchFilterContext';
+import { AI_SEARCH_PRODUCTS_QUERY } from '../../graphql/suggestions';
+import { cacaoClient } from '../../apollo';
 
 interface SearchPanelProps {
   isOpen: boolean;
@@ -41,8 +44,18 @@ function toggle(arr: string[], val: string): string[] {
 }
 
 export const SearchPanel: React.FC<SearchPanelProps> = ({ isOpen, activeTab, onTabChange }) => {
-  const { applyFilters, clearFilters, activeFilters } = useSearchFilters();
+  const { applyFilters, clearFilters, activeFilters, applyAISearch } = useSearchFilters();
   const [draft, setDraft] = useState<SearchFilters>(activeFilters ?? emptyFilters);
+  const [aiPromptText, setAiPromptText] = useState('');
+
+  const [runAISearch, { loading: aiLoading }] = useLazyQuery(AI_SEARCH_PRODUCTS_QUERY, {
+    client: cacaoClient,
+    fetchPolicy: 'network-only',
+    onCompleted: (data) => {
+      const results = data?.searchProductsByAi ?? [];
+      applyAISearch(results, aiPromptText.trim());
+    },
+  });
 
   if (!isOpen) return null;
 
@@ -54,6 +67,12 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ isOpen, activeTab, onT
   const handleReset = () => {
     setDraft(emptyFilters);
     clearFilters();
+  };
+
+  const handleAISearch = () => {
+    const prompt = aiPromptText.trim();
+    if (!prompt || aiLoading) return;
+    runAISearch({ variables: { prompt } });
   };
 
   const activeCount = [
@@ -110,13 +129,31 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ isOpen, activeTab, onT
           </div>
           <div className="relative">
             <textarea
-              className="w-full bg-surface-container-low border border-pink-100 rounded-xl p-4 pr-12 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#f65c88]/50 resize-none h-28"
-              placeholder="Vd: illustration anime phong cách pastel dùng cho stream..."
+              value={aiPromptText}
+              onChange={(e) => setAiPromptText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleAISearch();
+              }}
+              disabled={aiLoading}
+              className="w-full bg-surface-container-low border border-pink-100 rounded-xl p-4 pr-12 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#f65c88]/50 resize-none h-28 disabled:opacity-60"
+              placeholder="Vd: illustration anime phong cách pastel dùng cho stream, file PSD..."
             />
-            <button className="absolute bottom-3 right-3 p-2 bg-gradient-to-r from-[#f65c88] to-[#db2e50] text-white rounded-full hover:shadow-md transition-all hover:scale-105">
-              <Sparkles size={15} />
+            <button
+              onClick={handleAISearch}
+              disabled={aiLoading || !aiPromptText.trim()}
+              className="absolute bottom-3 right-3 p-2 bg-gradient-to-r from-[#f65c88] to-[#db2e50] text-white rounded-full hover:shadow-md transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              {aiLoading ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <Sparkles size={15} />
+              )}
             </button>
           </div>
+          <p className="mt-2 text-[11px] text-gray-400">
+            Shiro hiểu ngôn ngữ tự nhiên — thử mô tả phong cách, phần mềm, định dạng, giá tiền...
+            <span className="ml-1 text-gray-300">Ctrl+Enter để tìm</span>
+          </p>
         </div>
       ) : (
         <div className="animate-in fade-in zoom-in-95 duration-300">

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, TrendingUp, LayoutGrid, Users, Settings, HelpCircle } from 'lucide-react';
+import { Home, TrendingUp, LayoutGrid, Users, Settings, HelpCircle, Activity } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@apollo/client/react';
 import { MY_FOLLOWED_AUTHORS_QUERY } from '../../graphql/product';
@@ -16,10 +16,34 @@ interface FollowedAuthor {
   productCount: number;
 }
 
+const STATUS_HINTS = [
+  'Có gì đó trông lạ? Xem trạng thái hệ thống.',
+  'Tải chậm hay lỗi kỳ lạ? Kiểm tra hệ thống đi.',
+  'Không thấy nội dung? Hệ thống có thể đang nghỉ.',
+  'Shiro cũng không chắc mọi thứ ổn. Xem thử đi.',
+  'Đang bị lỗi? Biết đâu hệ thống đang bảo trì.',
+  'Nếu thứ gì đó không đúng — kiểm tra ngay nha.',
+  'Trang trắng tinh? Server chắc đi ngủ rồi.',
+  'Lỗi 500 à? Server đang khóc một mình.',
+  'Ảnh không load? Không phải wifi đâu, hệ thống đấy.',
+  'Shiro thấy hơi lạ. Mày thấy không?',
+  'Hmm... mọi thứ có vẻ... bình thường? Hay không?',
+  'Nếu bạn đang nhìn chằm chằm vào màn hình trống — xem này.',
+  'Backend đang ngủ hay đang làm việc? Chỉ có một cách biết.',
+  'Đôi khi máy chủ cũng cần nghỉ ngơi. Xem nó có ổn không.',
+  'AI đang mơ hay đang xử lý? Kiểm tra trạng thái đi.',
+  'Cacao AI bị lag? Hay là bạn lag?',
+  'Mọi thứ im lặng đáng ngờ. Nhấn vào đây xem sao.',
+  'Server: 🤔 | Bạn: 😤 | Giải pháp: →',
+  'Không phải lỗi của bạn. Có thể. Xem thử đi.',
+  'Hệ thống đôi khi cũng drama. Click để xem drama hôm nay.',
+];
+
 export const Sidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
+  const statusHint = useMemo(() => STATUS_HINTS[Math.floor(Math.random() * STATUS_HINTS.length)], []);
   const { t } = useTranslation();
   const token = localStorage.getItem('access_token');
 
@@ -130,6 +154,15 @@ export const Sidebar: React.FC = () => {
         <div className="flex items-center gap-3 text-on-surface-variant px-4 py-2 text-xs">
           {t('footer.copyrightShort', { year: new Date().getFullYear() })}
         </div>
+        <Link
+          to="/status"
+          className="flex items-start gap-2 px-4 py-2 rounded-xl hover:bg-surface-bright transition-all group"
+        >
+          <Activity size={12} className="mt-0.5 shrink-0 text-[#F65C88] opacity-60 group-hover:opacity-100 transition-opacity" />
+          <span className="text-[10px] text-on-surface-variant/40 group-hover:text-[#F65C88] leading-relaxed transition-colors">
+            {statusHint}
+          </span>
+        </Link>
       </div>
     </aside>
   );

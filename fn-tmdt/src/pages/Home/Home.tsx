@@ -22,18 +22,20 @@ import { BottomNav } from '../../components/layout/BottomNav';
 import { Sparkles, SlidersHorizontal, X } from 'lucide-react';
 import { LoadingSlime } from '../../components/ui/LoadingSlime';
 import { useSearchFilters } from '../../contexts/SearchFilterContext';
+import shiroEnable from '../../assets/images/texture/shiro_enable.png';
 import { useUserProfile } from '../../contexts/UserProfileContext';
 
 export const Home: React.FC = () => {
   const { t } = useTranslation();
-  const { activeFilters, clearFilters } = useSearchFilters();
+  const { activeFilters, clearFilters, aiResults, aiPrompt, clearAISearch } = useSearchFilters();
   const { profile } = useUserProfile();
   const { products: allProducts, loading: allLoading, hasMore: allHasMore, reachedMax: allReachedMax, loadMore: allLoadMore, refresh: allRefresh } = useHomeProducts();
   const { products: filteredProducts, loading: filterLoading, isActive } = useFilteredProducts(activeFilters);
   const { products: personalizedProducts, loading: personalizedLoading, hasMore: pHasMore, reachedMax: pReachedMax, loadMore: pLoadMore, refresh: pRefresh } = usePersonalizedFeed(profile.id || null);
-  const isPersonalized = !!profile.id && !isActive;
-  const products = isActive ? filteredProducts : (isPersonalized ? personalizedProducts : allProducts);
-  const loading = isActive ? filterLoading : (isPersonalized ? personalizedLoading : allLoading);
+  const isAISearch = !!aiResults;
+  const isPersonalized = !!profile.id && !isActive && !isAISearch;
+  const products = isAISearch ? (aiResults as typeof allProducts) : (isActive ? filteredProducts : (isPersonalized ? personalizedProducts : allProducts));
+  const loading = isAISearch ? false : (isActive ? filterLoading : (isPersonalized ? personalizedLoading : allLoading));
   const hasMore = isPersonalized ? pHasMore : allHasMore;
   const reachedMax = isPersonalized ? pReachedMax : allReachedMax;
   const loadMore = isPersonalized ? pLoadMore : allLoadMore;
@@ -67,7 +69,15 @@ export const Home: React.FC = () => {
           <section className="mb-12">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
-                {isActive ? (
+                {isAISearch ? (
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#f65c88]/10 text-[#f65c88] text-xs font-bold uppercase tracking-wider mb-4 border border-[#f65c88]/20">
+                    <img src={shiroEnable} alt="Shiro" className="w-3.5 h-3.5 object-contain" />
+                    Shiro AI
+                    <button onClick={clearAISearch} className="ml-0.5 hover:text-[#db2e50] transition-colors">
+                      <X size={13} />
+                    </button>
+                  </div>
+                ) : isActive ? (
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#040316]/8 text-[#040316] text-xs font-bold uppercase tracking-wider mb-4 border border-[#040316]/15">
                     <SlidersHorizontal size={13} />
                     Đang lọc
@@ -100,7 +110,15 @@ export const Home: React.FC = () => {
             <LoadingSlime />
           ) : products.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-[#040316]/40">
-              <p className="text-sm">Chưa có sản phẩm nào.</p>
+              {isAISearch ? (
+                <>
+                  <img src={shiroEnable} alt="Shiro" className="w-10 h-10 object-contain opacity-40 mb-3" />
+                  <p className="text-sm">Shiro không tìm thấy sản phẩm phù hợp với "{aiPrompt}"</p>
+                  <button onClick={clearAISearch} className="mt-3 text-xs text-[#f65c88] hover:underline">Xóa tìm kiếm</button>
+                </>
+              ) : (
+                <p className="text-sm">Chưa có sản phẩm nào.</p>
+              )}
             </div>
           ) : (
             <div className="animate-in fade-in zoom-in-95 duration-500">
@@ -112,8 +130,8 @@ export const Home: React.FC = () => {
                 </Masonry>
               </ResponsiveMasonry>
 
-              {/* Infinite scroll sentinel — hidden when filter active */}
-              <div ref={isActive ? undefined : sentinelRef} className="py-8 flex flex-col items-center gap-3">
+              {/* Infinite scroll sentinel — hidden when filter or AI search active */}
+              <div ref={(isActive || isAISearch) ? undefined : sentinelRef} className="py-8 flex flex-col items-center gap-3">
                 {loading && (
                   <div className="w-6 h-6 border-2 border-[#F65C88]/30 border-t-[#F65C88] rounded-full animate-spin" />
                 )}

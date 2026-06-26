@@ -67,3 +67,12 @@ export const SUGGESTIONS_COUNT_QUERY = gql`
     suggestionsCount
   }
 `;
+
+export const AI_SEARCH_PRODUCTS_QUERY = gql`
+  ${SUGGESTION_FIELDS}
+  query SearchProductsByAI($prompt: String!) {
+    searchProductsByAi(prompt: $prompt) {
+      ...SuggestionFields
+    }
+  }
+`;

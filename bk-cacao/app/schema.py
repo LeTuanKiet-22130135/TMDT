@@ -88,25 +88,31 @@ class Query:
 
     @strawberry.field
     def search_products_by_ai(self, prompt: str) -> List[SuggestionProduct]:
+        from sqlalchemy import or_
         params = extract_search_query(prompt)
 
         with get_db() as db:
-            query = (
+            q = (
                 db.query(Product, Store, User)
                 .join(Store, Product.store_id == Store.id)
                 .join(User, Store.owner_id == User.id)
                 .filter(Product.is_active == True)
             )
 
-            if params.name:
-                query = query.filter(Product.name.ilike(f"%{params.name}%"))
+            if params.keyword:
+                q = q.filter(Product.name.ilike(f"%{params.keyword}%"))
 
             if params.min_price is not None:
-                query = query.filter(Product.price >= params.min_price)
+                q = q.filter(Product.price >= params.min_price)
             if params.max_price is not None:
-                query = query.filter(Product.price <= params.max_price)
+                q = q.filter(Product.price <= params.max_price)
 
-            rows = query.limit(20).all()
+            if params.software_tags:
+                q = q.filter(or_(*[Product.software_tags.contains([t]) for t in params.software_tags]))
+            if params.format_tags:
+                q = q.filter(or_(*[Product.format_tags.contains([t]) for t in params.format_tags]))
+
+            rows = q.order_by(Product.created_at.desc()).limit(30).all()
 
         return [_build_suggestion(p, u) for p, _s, u in rows]
 

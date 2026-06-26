@@ -58,6 +58,11 @@ app.include_router(agent_graphql_router, prefix="/agent/graphql", tags=["agent"]
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 
+@app.get("/health", tags=["health"])
+def health():
+    return {"status": "ok", "service": "bk-tmdt"}
+
+
 if __name__ == "__main__":
 	import uvicorn
 

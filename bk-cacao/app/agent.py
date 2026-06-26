@@ -60,20 +60,49 @@ def ask_agent(user_prompt: str) -> str:
         return f"Agent error: {e}"
 
 
+VALID_SOFTWARE_TAGS = ["photoshop", "clip-studio", "procreate", "illustrator", "live2d-cubism", "blender"]
+VALID_FORMAT_TAGS = ["png", "jpg", "psd", "ai", "svg", "moc3", "cmo3", "zip", "mp4"]
+VALID_LICENSE_TYPES = ["personal", "commercial", "extended"]
+
+_EXTRACT_SYSTEM = f"""You are a search query extractor for a Vietnamese digital art marketplace (illustrations, Live2D, brushes, etc.).
+
+Given a Vietnamese user search prompt, extract structured fields:
+- keyword: Vietnamese search term for product name/description (keep in Vietnamese)
+- min_price: minimum price in VND (null if not mentioned)
+- max_price: maximum price in VND (null if not mentioned)
+- software_tags: list of software tags the product is compatible with. Only use values from: {VALID_SOFTWARE_TAGS}
+- format_tags: list of file format tags. Only use values from: {VALID_FORMAT_TAGS}
+
+Rules:
+- Leave fields null/empty list if not mentioned or unclear
+- "miễn phí" / "free" → min_price=0, max_price=0
+- "dưới Xk" → max_price = X*1000
+- "photoshop" → software_tags=["photoshop"], "clip studio" → ["clip-studio"], "live2d" → ["live2d-cubism"]
+- ".psd" → format_tags=["psd"], "png" → ["png"]
+- Extract multiple tags if user mentions multiple software/formats
+"""
+
+
 class ProductSearchQuery(BaseModel):
-    name: Optional[str] = Field(default=None, description="Product name/keyword to search for.")
-    min_price: Optional[float] = Field(default=None, description="Minimum price filter.")
-    max_price: Optional[float] = Field(default=None, description="Maximum price filter.")
+    keyword: Optional[str] = Field(default=None, description="Vietnamese search keyword for product name.")
+    min_price: Optional[float] = Field(default=None, description="Minimum price in VND.")
+    max_price: Optional[float] = Field(default=None, description="Maximum price in VND.")
+    software_tags: list[str] = Field(default_factory=list, description="Software compatibility tags.")
+    format_tags: list[str] = Field(default_factory=list, description="File format tags.")
 
 
 def extract_search_query(user_prompt: str) -> ProductSearchQuery:
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "Extract product search parameters (name, min_price, max_price) from the user input. Leave fields null if not mentioned."),
+        ("system", _EXTRACT_SYSTEM),
         ("human", "{input}"),
     ])
     try:
         chain = prompt | _get_llm().with_structured_output(ProductSearchQuery)
-        return chain.invoke({"input": user_prompt})
+        result = chain.invoke({"input": user_prompt})
+        # sanitize: only allow valid tag values
+        result.software_tags = [t for t in (result.software_tags or []) if t in VALID_SOFTWARE_TAGS]
+        result.format_tags = [t for t in (result.format_tags or []) if t in VALID_FORMAT_TAGS]
+        return result
     except Exception as e:
         print(f"[extract_search_query] {e}")
         return ProductSearchQuery()
