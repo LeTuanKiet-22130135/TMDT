@@ -33,6 +33,10 @@ from app.graphql.types import (
     UserConnection,
     OrderConnection,
     ReportConnection,
+    ReviewType,
+    CommentType,
+    ReviewConnection,
+    CommentConnection,
     to_author_type,
     to_category_type,
     to_product_type,
@@ -40,8 +44,10 @@ from app.graphql.types import (
     to_user_type,
     to_order_type,
     to_report_type,
+    to_review_type,
+    to_comment_type,
 )
-from app.models import Category, User, Order, OrderItem, Report, Product, Store, RoleEnum, OrderStatusEnum, UserFollow
+from app.models import Category, User, Order, OrderItem, Report, Product, Store, RoleEnum, OrderStatusEnum, UserFollow, Review, Comment
 
 
 
@@ -202,6 +208,45 @@ class Query:
         if product is None or not product.is_active:
             return None
         return to_product_type(product)
+
+    @strawberry.field
+    def product_reviews(self, info: Info, product_id: UUID, page: int = 1, limit: int = 10) -> ReviewConnection:
+        db = _db(info)
+        safe_page = max(page, 1)
+        safe_limit = min(max(limit, 1), 50)
+        
+        stmt = select(Review).where(Review.product_id == product_id).order_by(Review.created_at.desc())
+        total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+        items = db.scalars(stmt.offset((safe_page - 1) * safe_limit).limit(safe_limit)).all()
+        
+        avg_rating = db.scalar(select(func.avg(Review.rating)).where(Review.product_id == product_id)) or 0.0
+        
+        from math import ceil
+        return ReviewConnection(
+            items=[to_review_type(r) for r in items],
+            total_items=total,
+            total_pages=ceil(total / safe_limit) if total else 0,
+            average_rating=float(avg_rating)
+        )
+
+    @strawberry.field
+    def product_comments(self, info: Info, product_id: UUID, page: int = 1, limit: int = 20) -> CommentConnection:
+        db = _db(info)
+        safe_page = max(page, 1)
+        safe_limit = min(max(limit, 1), 50)
+        
+        # Optionally, you can only fetch root comments here (parent_id is null) 
+        # But for simplicity, we just fetch all or order by newest
+        stmt = select(Comment).where(Comment.product_id == product_id).order_by(Comment.created_at.desc())
+        total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+        items = db.scalars(stmt.offset((safe_page - 1) * safe_limit).limit(safe_limit)).all()
+        
+        from math import ceil
+        return CommentConnection(
+            items=[to_comment_type(c) for c in items],
+            total_items=total,
+            total_pages=ceil(total / safe_limit) if total else 0,
+        )
 
     @strawberry.field
     def products(

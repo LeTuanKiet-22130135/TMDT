@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Star, ShoppingCart, FolderPlus, Send, Check, Loader2 } from 'lucide-react';
+import { Star, ShoppingCart, FolderPlus, Send, Check, Loader2, MessageSquare } from 'lucide-react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { client } from '../apollo';
 import {
@@ -10,6 +10,7 @@ import {
   UNFOLLOW_MUTATION,
   MY_FOLLOWED_AUTHORS_QUERY,
 } from '../graphql/product';
+import { GET_PRODUCT_REVIEWS, ADD_REVIEW_MUTATION } from '../graphql/review';
 import { Header } from '../components/layout/Header';
 import { Sidebar } from '../components/layout/Sidebar';
 import { BottomNav } from '../components/layout/BottomNav';
@@ -96,9 +97,23 @@ export const ProductDetailPage: React.FC = () => {
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
-  const [commentsList, setCommentsList] = useState<string[]>([]);
-  const [newCommentText, setNewCommentText] = useState('');
   const [addedAnim, setAddedAnim] = useState(false);
+  const [newReviewRating, setNewReviewRating] = useState(5);
+  const [newReviewComment, setNewReviewComment] = useState('');
+
+  const { data: reviewsData, refetch: refetchReviews } = useQuery(GET_PRODUCT_REVIEWS, {
+    variables: { productId: id, page: 1, limit: 10 },
+    skip: !id,
+    fetchPolicy: 'cache-and-network'
+  });
+
+  const [addReviewMutate, { loading: reviewLoading }] = useMutation(ADD_REVIEW_MUTATION, {
+    onCompleted: () => {
+      setNewReviewComment('');
+      setNewReviewRating(5);
+      refetchReviews();
+    }
+  });
 
   const isJustAdded = product ? addedProductId === product.id : false;
 
@@ -146,11 +161,10 @@ export const ProductDetailPage: React.FC = () => {
     trackEvent(profile.id, product.id, 'cart');
   };
 
-  const handlePostComment = (e: React.FormEvent) => {
+  const handlePostReview = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCommentText.trim()) return;
-    setCommentsList([newCommentText, ...commentsList]);
-    setNewCommentText('');
+    if (!newReviewComment.trim() || !id) return;
+    addReviewMutate({ variables: { productId: id, rating: newReviewRating, comment: newReviewComment } });
   };
 
   const allTags = [...product.userTags, ...product.aiTags].slice(0, 5);
@@ -206,61 +220,24 @@ export const ProductDetailPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Comments */}
+              {/* Comments / Discussions Trigger */}
               <div className="mt-8 border-t border-outline-variant/15 pt-8">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-bold font-headline flex items-center gap-2">
-                    <span>Phản hồi</span>
-                    <Badge variant="muted">{commentsList.length} Bình luận</Badge>
+                    <span>Thảo luận chung</span>
                   </h3>
                 </div>
 
-                <form onSubmit={handlePostComment} className="flex gap-4 mb-8">
-                  <div className="w-10 h-10 rounded-full bg-[#FFC9D2] flex items-center justify-center font-bold text-[#F65C88] shrink-0">
-                    ME
-                  </div>
-                  <div className="flex-1 flex flex-col gap-2">
-                    <textarea
-                      value={newCommentText}
-                      onChange={(e) => setNewCommentText(e.target.value)}
-                      placeholder="Chia sẻ suy nghĩ của bạn về tài nguyên này..."
-                      rows={3}
-                      className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:border-tertiary focus:outline-none transition-colors placeholder:text-on-surface-variant/40 text-on-surface"
-                    />
-                    <button
-                      type="submit"
-                      className="self-end px-5 py-2 bg-[#F65C88] hover:bg-[#F65C88]/90 text-white rounded-xl text-xs font-bold shadow-md transition-colors flex items-center gap-2"
-                    >
-                      <Send size={14} />
-                      <span>Thêm bình luận</span>
-                    </button>
-                  </div>
-                </form>
-
-                {commentsList.map((comm, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-[#FFF1F3] border border-[#FFD9E0] rounded-2xl p-5 flex gap-4 mb-4 animate-in slide-in-from-top-3 duration-200"
+                <div className="bg-[#FFF1F3] border border-[#FFD9E0] rounded-2xl p-6 text-center">
+                  <MessageSquare size={32} className="mx-auto mb-3 text-[#F65C88]/50" />
+                  <p className="text-sm text-on-surface-variant mb-4">Chia sẻ suy nghĩ, hỏi đáp với nghệ sĩ và cộng đồng về tài nguyên này.</p>
+                  <button
+                    onClick={() => setIsCommentsOpen(true)}
+                    className="px-6 py-2.5 bg-[#F65C88] hover:bg-[#F65C88]/90 text-white rounded-2xl text-sm font-semibold shadow-md transition-colors inline-flex items-center gap-2"
                   >
-                    <div className="w-10 h-10 rounded-full bg-[#FFC9D2] flex items-center justify-center font-bold text-[#F65C88] shrink-0">
-                      ME
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sm">Bạn</span>
-                        <span className="text-xs text-on-surface-variant/60">Vừa xong</span>
-                      </div>
-                      <p className="text-sm text-on-surface-variant mt-2 leading-relaxed">{comm}</p>
-                    </div>
-                  </div>
-                ))}
-
-                <button
-                  onClick={() => setIsCommentsOpen(true)}
-                  className="w-full py-3 border border-dashed border-outline-variant rounded-2xl text-xs font-semibold text-on-surface-variant hover:text-tertiary hover:border-tertiary transition-all duration-200 mt-4 text-center"
-                >
-                  Xem tất cả bình luận &darr;
-                </button>
+                    Mở hộp thoại thảo luận
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -281,11 +258,12 @@ export const ProductDetailPage: React.FC = () => {
                 </h1>
                 <div className="flex items-center gap-2 text-sm text-on-surface-variant">
                   <div className="flex text-amber-500">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} size={16} fill="currentColor" />
-                    ))}
+                    <Star size={16} fill="currentColor" />
                   </div>
-                  <span className="font-bold text-on-surface">5.0</span>
+                  <span className="font-bold text-on-surface">
+                    {(reviewsData as any)?.productReviews?.averageRating?.toFixed(1) || "0.0"}
+                  </span>
+                  <span className="text-xs">({(reviewsData as any)?.productReviews?.totalItems || 0} đánh giá)</span>
                   <span>•</span>
                   <span>Mới</span>
                 </div>
@@ -411,6 +389,71 @@ export const ProductDetailPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Reviews Section */}
+              <div className="mt-8 pt-8 border-t border-outline-variant/10">
+                <h3 className="font-headline text-lg font-bold mb-4 flex items-center gap-2">
+                  <span>Đánh giá từ người mua</span>
+                  <Badge variant="secondary">{(reviewsData as any)?.productReviews?.totalItems || 0}</Badge>
+                </h3>
+
+                {alreadyPurchased && (
+                  <form onSubmit={handlePostReview} className="bg-surface-container-low rounded-2xl p-5 mb-6">
+                    <h4 className="text-sm font-semibold mb-3">Đánh giá của bạn</h4>
+                    <div className="flex gap-2 mb-3">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          type="button"
+                          key={star}
+                          onClick={() => setNewReviewRating(star)}
+                          className={`hover:scale-110 transition-transform ${newReviewRating >= star ? 'text-amber-500' : 'text-on-surface-variant/30'}`}
+                        >
+                          <Star size={20} fill={newReviewRating >= star ? 'currentColor' : 'none'} />
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      value={newReviewComment}
+                      onChange={(e) => setNewReviewComment(e.target.value)}
+                      placeholder="Chia sẻ trải nghiệm của bạn về tài nguyên này..."
+                      rows={3}
+                      className="w-full bg-white border border-outline-variant/20 rounded-xl px-4 py-3 text-sm focus:border-tertiary focus:outline-none mb-3"
+                    />
+                    <button
+                      type="submit"
+                      disabled={reviewLoading || !newReviewComment.trim()}
+                      className="px-5 py-2 bg-[#F65C88] hover:bg-[#F65C88]/90 text-white rounded-xl text-xs font-bold transition-colors disabled:opacity-50"
+                    >
+                      {reviewLoading ? 'Đang gửi...' : 'Gửi đánh giá'}
+                    </button>
+                  </form>
+                )}
+
+                <div className="space-y-4">
+                  {(reviewsData as any)?.productReviews?.items?.map((r: any) => (
+                    <div key={r.id} className="p-4 bg-white border border-outline-variant/10 rounded-2xl">
+                      <div className="flex items-center gap-3 mb-2">
+                        <img src={r.user.avatarUrl || "https://ui-avatars.com/api/?name=" + r.user.fullName} alt={r.user.fullName} className="w-8 h-8 rounded-full object-cover" />
+                        <div>
+                          <div className="text-sm font-semibold">{r.user.fullName}</div>
+                          <div className="flex text-amber-500 mt-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} size={10} fill={i < r.rating ? "currentColor" : "none"} color={i < r.rating ? "currentColor" : "#ccc"} />
+                            ))}
+                          </div>
+                        </div>
+                        <div className="ml-auto text-xs text-on-surface-variant/60">
+                          {new Date(r.createdAt).toLocaleDateString('vi-VN')}
+                        </div>
+                      </div>
+                      <p className="text-sm text-on-surface-variant leading-relaxed">{r.comment}</p>
+                    </div>
+                  ))}
+                  {(reviewsData as any)?.productReviews?.items?.length === 0 && (
+                    <div className="text-sm text-on-surface-variant/60 text-center py-4">Chưa có đánh giá nào.</div>
+                  )}
+                </div>
+              </div>
+
             </div>
           </div>
         </main>
@@ -420,7 +463,7 @@ export const ProductDetailPage: React.FC = () => {
       <CommentsModal
         isOpen={isCommentsOpen}
         onClose={() => setIsCommentsOpen(false)}
-        reviewsCount={commentsList.length}
+        productId={product.id}
       />
     </div>
   );

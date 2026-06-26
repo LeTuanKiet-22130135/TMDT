@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import strawberry
 
-from app.models import Category, Product, Store, User, Order, Report
+from app.models import Category, Product, Store, User, Order, Report, Review, Comment
 
 
 @strawberry.type
@@ -160,6 +160,46 @@ class ReportConnection:
 
 
 @strawberry.type
+class ReviewType:
+    id: str
+    user_id: str
+    product_id: str
+    order_item_id: str
+    rating: int
+    comment: str
+    created_at: datetime
+    user: UserType
+
+
+@strawberry.type
+class ReviewConnection:
+    items: list[ReviewType]
+    total_items: int
+    total_pages: int
+    average_rating: float
+
+
+@strawberry.type
+class CommentType:
+    id: str
+    user_id: str
+    product_id: str
+    parent_id: str | None
+    content: str
+    created_at: datetime
+    user: UserType
+    # replies will be handled in a separate field or resolved via dataloader if needed, 
+    # but for simplicity we can return simple fields.
+
+
+@strawberry.type
+class CommentConnection:
+    items: list[CommentType]
+    total_items: int
+    total_pages: int
+
+
+@strawberry.type
 class AdminStatsType:
     total_users: int
     total_orders: int
@@ -280,6 +320,31 @@ def to_report_type(report: Report) -> ReportType:
         reporter=to_user_type(report.reporter),
         reported_store=to_store_type(report.reported_store) if report.reported_store else None,
         reported_user=to_user_type(report.reported_user) if report.reported_user else None,
+    )
+
+
+def to_review_type(review: Review) -> ReviewType:
+    return ReviewType(
+        id=str(review.id),
+        user_id=str(review.user_id),
+        product_id=str(review.product_id),
+        order_item_id=str(review.order_item_id),
+        rating=review.rating,
+        comment=review.comment,
+        created_at=review.created_at,
+        user=to_user_type(review.user),
+    )
+
+
+def to_comment_type(comment: Comment) -> CommentType:
+    return CommentType(
+        id=str(comment.id),
+        user_id=str(comment.user_id),
+        product_id=str(comment.product_id),
+        parent_id=str(comment.parent_id) if comment.parent_id else None,
+        content=comment.content,
+        created_at=comment.created_at,
+        user=to_user_type(comment.user),
     )
 
 

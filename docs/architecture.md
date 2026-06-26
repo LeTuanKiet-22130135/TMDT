@@ -130,6 +130,7 @@ uploads/                      # File storage (ảnh sản phẩm, avatar)
 | `Product` | `image_urls` (JSONB), `user_tags`, `ai_tags`, `license_type` |
 | `Order`, `OrderItem` | |
 | `Cart`, `CartItem` | |
+| `Review`, `Comment` | Đánh giá (chỉ khi đã mua), Bình luận (hỏi đáp tự do) |
 | `Report` | Báo cáo vi phạm |
 
 **Shortlink system:**
