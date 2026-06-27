@@ -15,8 +15,10 @@ from app.crud.products import (
     list_best_sellers,
     list_most_viewed,
     list_newest_products,
+    list_popular_tags,
     list_products_by_store,
     list_suggested,
+    list_trending_by_tag,
     search_products,
 )
 from app.crud.stores import get_store, search_stores
@@ -304,6 +306,16 @@ class Query:
     def suggested_products(self, info: Info, limit: int = 10) -> list[ProductType]:
         safe_limit = min(max(limit, 1), 100)
         return [to_product_type(product) for product in list_suggested(_db(info), safe_limit)]
+
+    @strawberry.field
+    def trending_by_tag(self, info: Info, tag: str, limit: int = 20) -> list[ProductType]:
+        safe_limit = min(max(limit, 1), 100)
+        return [to_product_type(p) for p in list_trending_by_tag(_db(info), tag, safe_limit)]
+
+    @strawberry.field
+    def popular_tags(self, info: Info, limit: int = 20) -> list[str]:
+        safe_limit = min(max(limit, 1), 50)
+        return list_popular_tags(_db(info), safe_limit)
 
     @strawberry.field
     def store(self, info: Info, store_id: UUID) -> StoreType | None:

@@ -1,4 +1,4 @@
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.orm import Session
 
 from app.models import Product
@@ -77,3 +77,36 @@ def list_most_viewed(db: Session, limit: int = 10) -> list[Product]:
 
 def list_suggested(db: Session, limit: int = 10) -> list[Product]:
     return list(db.scalars(select(Product).where(Product.is_active.is_(True)).order_by(func.random()).limit(limit)).all())
+
+
+def list_trending_by_tag(db: Session, tag: str, limit: int = 20) -> list[Product]:
+    return list(db.scalars(
+        select(Product)
+        .where(
+            Product.is_active.is_(True),
+            or_(
+                Product.user_tags.contains([tag]),
+                Product.ai_tags.contains([tag]),
+                Product.software_tags.contains([tag]),
+                Product.format_tags.contains([tag]),
+            ),
+        )
+        .order_by(Product.sold_quantity.desc(), Product.view_count.desc())
+        .limit(limit)
+    ).all())
+
+
+def list_popular_tags(db: Session, limit: int = 20) -> list[str]:
+    result = db.execute(text("""
+        SELECT tag, COUNT(*) AS cnt
+        FROM products,
+        jsonb_array_elements_text(
+            COALESCE(user_tags, '[]'::jsonb) || COALESCE(ai_tags, '[]'::jsonb) ||
+            COALESCE(software_tags, '[]'::jsonb) || COALESCE(format_tags, '[]'::jsonb)
+        ) AS tag
+        WHERE is_active = true AND tag != ''
+        GROUP BY tag
+        ORDER BY cnt DESC
+        LIMIT :limit
+    """), {"limit": limit})
+    return [row[0] for row in result]

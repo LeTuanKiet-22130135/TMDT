@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, TrendingUp, LayoutGrid, Users, Settings, HelpCircle, Activity } from 'lucide-react';
+import { Home, TrendingUp, Users, Settings, HelpCircle, Activity } from 'lucide-react';
 import { useSystemStatus } from '../../hooks/useSystemStatus';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@apollo/client/react';
@@ -94,18 +94,14 @@ export const Sidebar: React.FC = () => {
           <span>Trang chủ</span>
         </Link>
         <Link
-          className="flex items-center gap-3 text-on-surface-variant px-4 py-2 hover:bg-surface-bright rounded-full transition-all"
-          to="/"
+          className={`flex items-center gap-3 rounded-full px-4 py-2 transition-all duration-300 ${currentPath === '/trending'
+            ? 'bg-surface-container-lowest text-tertiary shadow-sm'
+            : 'text-on-surface-variant hover:bg-surface-bright'
+          }`}
+          to="/trending"
         >
-          <TrendingUp size={20} />
+          <TrendingUp size={20} fill={currentPath === '/trending' ? 'currentColor' : 'none'} />
           <span>Thịnh hành</span>
-        </Link>
-        <Link
-          className="flex items-center gap-3 text-on-surface-variant px-4 py-2 hover:bg-surface-bright rounded-full transition-all"
-          to="/"
-        >
-          <LayoutGrid size={20} />
-          <span>Bộ sưu tập</span>
         </Link>
         <Link
           className={`flex items-center gap-3 rounded-full px-4 py-2 transition-all duration-300 ${currentPath === '/following'

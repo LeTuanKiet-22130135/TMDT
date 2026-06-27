@@ -21,6 +21,7 @@ import LibraryPage from "./pages/Library/LibraryPage"
 import FollowingFeedPage from "./pages/Following/FollowingFeedPage"
 import StatusPage from "./pages/Status/StatusPage"
 import EditProductPage from "./pages/EditProduct/EditProductPage"
+import TrendingPage from "./pages/Trending/TrendingPage"
 
 function CursorGlow() {
   const glowRef = useRef<HTMLDivElement>(null);
@@ -85,6 +86,7 @@ function App() {
           <Route path="/checkout/result" element={<CheckoutResultPage />} />
           <Route path="/library" element={<LibraryPage />} />
           <Route path="/following" element={<FollowingFeedPage />} />
+          <Route path="/trending" element={<TrendingPage />} />
           <Route path="/status" element={<StatusPage />} />
         </Routes>
       </Router>
