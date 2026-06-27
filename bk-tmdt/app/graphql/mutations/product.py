@@ -19,7 +19,7 @@ async def _trigger_ai_tagging(product_id: str, image_url: str, callback_url: str
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(
-                f"{CACAO_BASE_URL}/tag-image",
+                f"{CACAO_BASE_URL}/api/v1/tag-image",
                 json={
                     "product_id": product_id,
                     "image_url": image_url,
