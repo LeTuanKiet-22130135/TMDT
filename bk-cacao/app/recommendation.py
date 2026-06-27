@@ -19,7 +19,7 @@ from uuid import uuid4
 from sqlalchemy.orm import Session
 
 from app.embeddings import embed_product, embed_query
-from app.models import Product, ProductRedProfile, UserRedProfile
+from app.models import Product, ProductRedProfile, Store, UserRedProfile
 
 EVENT_WEIGHTS: Dict[str, int] = {
     "view": 2,
@@ -116,19 +116,35 @@ def track_event(db: Session, user_id: str, product_id: str, event_type: str) -> 
     return True
 
 
+def _get_excluded_product_ids(db: Session, user_id: str, event_log: Dict) -> set:
+    """Products to exclude: already purchased + owned by user."""
+    purchased = {
+        pid for pid, events in event_log.items()
+        if events.get("purchase", 0) > 0
+    }
+    user_stores = db.query(Store).filter_by(owner_id=user_id).all()
+    own_ids: set = set()
+    if user_stores:
+        store_ids = [s.id for s in user_stores]
+        rows = db.query(Product.id).filter(Product.store_id.in_(store_ids)).all()
+        own_ids = {str(r.id) for r in rows}
+    return purchased | own_ids
+
+
 def get_recommendations(db: Session, user_id: str, limit: int = 20) -> List[Tuple[str, float]]:
     """Returns [(product_id, score)] sorted desc. Empty if no profile."""
     profile = db.query(UserRedProfile).filter_by(user_id=user_id).first()
     if not profile or not profile.tag_weights:
         return []
 
+    exclude_ids = _get_excluded_product_ids(db, user_id, profile.event_log or {})
     tag_weights: Dict[str, float] = profile.tag_weights
     all_pp = db.query(ProductRedProfile).all()
 
     scored = [
         (str(pp.product_id), cosine_sim(tag_weights, pp.tag_vector))
         for pp in all_pp
-        if pp.tag_vector
+        if pp.tag_vector and str(pp.product_id) not in exclude_ids
     ]
     scored.sort(key=lambda x: x[1], reverse=True)
     return scored[:limit]
