@@ -89,5 +89,31 @@ def user_change_role():
     change_role(email, role)
 
 
+@app.command()
+def reset(
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt"),
+):
+    """Reset DB to clean state: keep users, delete everything else."""
+    from src.resetter import reset_db, TABLES_TO_CLEAR, _count
+
+    typer.echo("\nTables to be cleared:")
+    totals: dict[str, int] = {}
+    for table in TABLES_TO_CLEAR:
+        count = _count(table)
+        totals[table] = count
+        status = f"{count:>6} rows" if count >= 0 else "  (not found)"
+        typer.echo(f"  {table:<30} {status}")
+
+    total_rows = sum(c for c in totals.values() if c >= 0)
+    typer.echo(f"\nTotal: {total_rows} rows will be deleted. Users kept.\n")
+
+    if not yes:
+        typer.confirm("Continue?", abort=True)
+
+    typer.echo("Resetting...")
+    reset_db()
+    typer.echo("✓ Done — DB clean, users intact.")
+
+
 if __name__ == "__main__":
     app()

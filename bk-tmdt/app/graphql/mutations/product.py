@@ -137,6 +137,7 @@ class ProductMutation:
             if category is None:
                 raise Exception("Danh mục không tồn tại")
 
+        has_images = bool(image_urls)
         product = Product(
             store_id=store.id,
             category_id=category_id,
@@ -151,19 +152,21 @@ class ProductMutation:
             ai_tags=[],
             software_tags=software_tags or [],
             format_tags=format_tags or [],
+            is_active=not has_images,  # hidden until AI tagging completes
         )
         db.add(product)
         db.commit()
         db.refresh(product)
 
-        if image_urls:
-            from app.core.config import settings
+        if has_images:
             tmdt_base = os.getenv("TMDT_INTERNAL_URL", "http://localhost:8000")
             product_id_str = str(product.id)
             first_image = image_urls[0]
             callback_url = f"{tmdt_base}/api/v1/internal/products/{product_id_str}/ai-tags"
             asyncio.create_task(_trigger_ai_tagging(product_id_str, first_image, callback_url))
-
-        asyncio.create_task(_trigger_cacao_index(str(product.id)))
+            # cacao index triggered by callback after ai_tags saved
+        else:
+            # no image → no tagging, index immediately
+            asyncio.create_task(_trigger_cacao_index(str(product.id)))
 
         return to_product_type(product)

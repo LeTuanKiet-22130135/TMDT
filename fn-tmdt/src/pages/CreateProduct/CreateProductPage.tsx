@@ -130,7 +130,7 @@ export const CreateProductPage: React.FC = () => {
           </div>
           <h2 className="text-xl font-extrabold text-[#040316] mb-2">Đăng sản phẩm thành công!</h2>
           <p className="text-sm text-[#040316]/50 mb-2">
-            AI đang gắn nhãn ảnh của bạn trong nền. Các nhãn AI sẽ xuất hiện sau vài giây.
+            AI đang phân tích và gắn nhãn ảnh. Sản phẩm sẽ tự động hiển thị trong cửa hàng sau khi quá trình này hoàn tất (thường dưới 1 phút).
           </p>
           <p className="text-xs text-[#040316]/30 mb-6">ID: {successId}</p>
           <div className="flex gap-3 justify-center">
