@@ -16,7 +16,7 @@ const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/users", icon: Users, label: "Người dùng" },
   { to: "/products", icon: Package, label: "Sản phẩm" },
-  { to: "/orders", icon: ShoppingCart, label: "Đơn hàng" },
+  { to: "/orders", icon: ShoppingCart, label: "Giao Dịch" },
   { to: "/stores", icon: Store, label: "Cửa hàng" },
   { to: "/reports", icon: Flag, label: "Báo cáo vi phạm" },
 ];
