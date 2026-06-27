@@ -1,0 +1,50 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: tmdt_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: tmdt
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  bk-tmdt:
+    build: ./bk-tmdt
+    container_name: bk-tmdt
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_URL=postgresql+psycopg2://postgres:123@db:5432/tmdt
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  bk-cacao:
+    build: ./bk-cacao
+    container_name: bk-cacao
+    ports:
+      - "8001:8000"
+    environment:
+      - DB_URL=postgresql+psycopg2://postgres:123@db:5432/tmdt
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

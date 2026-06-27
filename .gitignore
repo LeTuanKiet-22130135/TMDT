@@ -1,2 +1,15 @@
 **/test_data
 **/.cache
+__pycache__/
+**/__pycache__/
+*.pyc
+**/faiss_index
+
+# Env files
+bk-cacao/.env
+bk-tmdt/.env
+fn-admin/.env
+fn-tmdt/.env
+agent_credentials.txt
+bk-cacao/.env
+.env.production
