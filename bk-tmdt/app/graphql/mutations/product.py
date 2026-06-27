@@ -15,7 +15,23 @@ from app.graphql.mutations.utils import _db
 CACAO_BASE_URL = os.getenv("CACAO_URL", "http://localhost:8001")
 
 async def _trigger_ai_tagging(product_id: str, image_url: str, callback_url: str) -> None:
-    print(f"[AI tagging] disabled, skipping trigger for {product_id}")
+    """Fire-and-forget: send image to bk-cacao for ONNX tagging."""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                f"{CACAO_BASE_URL}/tag-image",
+                json={
+                    "product_id": product_id,
+                    "image_url": image_url,
+                    "callback_url": callback_url,
+                },
+            )
+            if resp.status_code != 200:
+                print(f"[AI tagging] HTTP {resp.status_code} for {product_id}")
+            else:
+                print(f"[AI tagging] queued for {product_id}")
+    except Exception as e:
+        print(f"[AI tagging] failed for {product_id}: {e}")
 
 async def _trigger_cacao_index(product_id: str) -> None:
     """Fire-and-forget: ask bk-cacao to build tag_vector + embedding for new product."""
