@@ -182,3 +182,23 @@ export const RESOLVE_REPORT_MUTATION = gql`
   }
 `;
 
+export const GET_ADMIN_REVENUE_CHART = gql`
+  query AdminRevenueChart($timePeriod: String!) {
+    adminRevenueChart(timePeriod: $timePeriod) {
+      date
+      revenue
+    }
+  }
+`;
+
+export const GET_ADMIN_CATEGORY_REVENUE = gql`
+  query AdminCategoryRevenue($timePeriod: String!) {
+    adminCategoryRevenue(timePeriod: $timePeriod) {
+      name
+      value
+      color
+    }
+  }
+`;
+
+

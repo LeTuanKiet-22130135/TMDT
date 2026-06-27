@@ -1,6 +1,9 @@
 from math import ceil
 from enum import Enum
 from uuid import UUID
+from datetime import datetime, timedelta, timezone
+from enum import Enum
+from uuid import UUID
 
 import strawberry
 from sqlalchemy.orm import Session
@@ -46,6 +49,8 @@ from app.graphql.types import (
     to_report_type,
     to_review_type,
     to_comment_type,
+    RevenueDataPointType,
+    CategoryRevenueDataPointType,
 )
 from app.models import Category, User, Order, OrderItem, Report, Product, Store, RoleEnum, OrderStatusEnum, UserFollow, Review, Comment
 
@@ -487,6 +492,88 @@ class Query:
             total_items=total_items,
             total_pages=ceil(total_items / safe_limit) if total_items else 0,
         )
+
+    @strawberry.field
+    def admin_revenue_chart(self, info: Info, time_period: str) -> list[RevenueDataPointType]:
+        user = _current_user(info)
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+        
+        db = _db(info)
+        now = datetime.now(timezone.utc)
+        
+        if time_period == "7days":
+            start_date = now - timedelta(days=7)
+            trunc_level = "day"
+            date_format = "DD/MM"
+        elif time_period == "30days":
+            start_date = now - timedelta(days=30)
+            trunc_level = "day"
+            date_format = "DD/MM"
+        else: # year
+            start_date = datetime(now.year, 1, 1, tzinfo=timezone.utc)
+            trunc_level = "month"
+            date_format = "MM/YYYY"
+
+        stmt = (
+            select(
+                func.to_char(func.date_trunc(trunc_level, Order.created_at), date_format).label("date_label"),
+                func.sum(Order.final_amount).label("total")
+            )
+            .where(Order.status == OrderStatusEnum.COMPLETED)
+            .where(Order.created_at >= start_date)
+            .group_by(func.date_trunc(trunc_level, Order.created_at))
+            .order_by(func.date_trunc(trunc_level, Order.created_at))
+        )
+        
+        results = db.execute(stmt).all()
+        return [RevenueDataPointType(date=r.date_label, revenue=float(r.total)) for r in results]
+
+    @strawberry.field
+    def admin_category_revenue(self, info: Info, time_period: str) -> list[CategoryRevenueDataPointType]:
+        user = _current_user(info)
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+        
+        db = _db(info)
+        now = datetime.now(timezone.utc)
+        
+        if time_period == "7days":
+            start_date = now - timedelta(days=7)
+        elif time_period == "30days":
+            start_date = now - timedelta(days=30)
+        else: # year
+            start_date = datetime(now.year, 1, 1, tzinfo=timezone.utc)
+            
+        stmt = (
+            select(
+                Category.name,
+                func.sum(OrderItem.unit_price * OrderItem.quantity).label("total")
+            )
+            .select_from(Order)
+            .join(OrderItem, Order.id == OrderItem.order_id)
+            .join(Product, OrderItem.product_id == Product.id)
+            .join(Category, Product.category_id == Category.id)
+            .where(Order.status == OrderStatusEnum.COMPLETED)
+            .where(Order.created_at >= start_date)
+            .group_by(Category.name)
+            .order_by(func.sum(OrderItem.unit_price * OrderItem.quantity).desc())
+            .limit(10)
+        )
+        
+        results = db.execute(stmt).all()
+        
+        colors = ["#F65C88", "#38bdf8", "#fbbf24", "#4ade80", "#a855f7", "#ec4899", "#14b8a6", "#f97316"]
+        
+        data = []
+        for i, r in enumerate(results):
+            data.append(CategoryRevenueDataPointType(
+                name=r.name,
+                value=float(r.total),
+                color=colors[i % len(colors)]
+            ))
+            
+        return data
 
 
 from app.graphql.mutations import Mutation

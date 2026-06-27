@@ -209,6 +209,20 @@ class AdminStatsType:
     pending_orders: int
 
 
+@strawberry.type
+class RevenueDataPointType:
+    date: str
+    revenue: float
+
+
+@strawberry.type
+class CategoryRevenueDataPointType:
+    name: str
+    value: float
+    color: str
+
+
+
 def to_user_type(user: User) -> UserType:
     return UserType(
         id=str(user.id),

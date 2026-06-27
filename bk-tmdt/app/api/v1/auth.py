@@ -7,14 +7,19 @@ from app.api.dependencies import get_db
 from app.core.security import (
     create_access_token,
     create_email_verification_token,
+    create_password_reset_token,
     create_refresh_token,
+    get_token_subject,
     hash_password,
     verify_password,
 )
 from app.models import ShoppingCart, User, AuthProviderEnum
 from datetime import datetime, timedelta, timezone
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserRead, SocialLoginRequest
-from app.services.email import send_otp_email
+from app.schemas.auth import (
+    LoginRequest, RegisterRequest, TokenResponse, UserRead, SocialLoginRequest,
+    ForgotPasswordRequest, ResetPasswordRequest
+)
+from app.services.email import send_otp_email, send_password_reset_email
 import random
 
 
@@ -172,3 +177,39 @@ async def login_with_facebook(payload: SocialLoginRequest, db: Session = Depends
         refresh_token=create_refresh_token(str(user.id)),
         user=_serialize_user(user),
     )
+
+
+def _queue_reset_email(email: str, name: str, token: str) -> None:
+    send_password_reset_email(email, name, token)
+
+
+@router.post("/forgot-password")
+def forgot_password(
+    payload: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    user = db.scalar(select(User).where(User.email == payload.email))
+    if user is not None:
+        token = create_password_reset_token(str(user.id))
+        background_tasks.add_task(_queue_reset_email, user.email, user.full_name, token)
+    return {"message": "Nếu email tồn tại, link lấy lại mật khẩu đã được gửi."}
+
+
+@router.post("/reset-password")
+def reset_password(
+    payload: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    try:
+        user_id = get_token_subject(payload.token, expected_type="reset_password")
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token không hợp lệ hoặc đã hết hạn")
+    
+    user = db.scalar(select(User).where(User.id == user_id))
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người dùng")
+        
+    user.password_hash = hash_password(payload.new_password)
+    db.commit()
+    return {"message": "Đổi mật khẩu thành công"}

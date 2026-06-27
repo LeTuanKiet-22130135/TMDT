@@ -137,9 +137,11 @@ The API will be available at:
 
 The GraphQL endpoint supports product and store discovery plus current-user lookup.
 
-Available GraphQL queries:
+Available GraphQL queries & mutations:
 
 - `me`
+- `forgotPassword(email)` (Mutation)
+- `resetPassword(token, new_password)` (Mutation)
 - `product(productId)`
 - `products(q, categoryId, brand, minPrice, maxPrice, sortBy, page, limit)`
 - `newestProducts(limit)`
@@ -149,6 +151,9 @@ Available GraphQL queries:
 - `store(storeId)`
 - `stores(q, page, limit)`
 - `storeProducts(storeId)`
+- `adminStats`
+- `adminRevenueChart(timePeriod)`
+- `adminCategoryRevenue(timePeriod)`
 
 Example query:
 
@@ -195,6 +200,8 @@ curl -X POST http://127.0.0.1:8000/graphql \
 
 - `POST /api/v1/auth/register`
 - `POST /api/v1/auth/login`
+- `POST /api/v1/auth/forgot-password`
+- `POST /api/v1/auth/reset-password`
 - `GET /api/v1/products`
 - `GET /api/v1/products/{product_id}`
 - `GET /api/v1/stores`

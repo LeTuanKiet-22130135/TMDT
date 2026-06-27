@@ -6,8 +6,8 @@ from strawberry.types import Info
 from sqlalchemy import select
 
 from app.models import User, ShoppingCart, Store
-from app.core.security import create_access_token, create_refresh_token, hash_password, verify_password
-from app.api.v1.auth import _queue_verification_email
+from app.core.security import create_access_token, create_refresh_token, hash_password, verify_password, create_password_reset_token, get_token_subject
+from app.api.v1.auth import _queue_verification_email, _queue_reset_email
 from app.graphql.types import to_user_type
 from app.graphql.auth_types import TokenType
 from app.graphql.mutations.utils import _db, _background_tasks, _generate_shortlink
@@ -88,5 +88,32 @@ class AuthMutation:
         user.is_verified = True
         user.verification_otp = None
         user.verification_otp_expires_at = None
+        db.commit()
+        return True
+
+    @strawberry.mutation
+    def forgotPassword(self, info: Info, email: str) -> bool:
+        db = _db(info)
+        background_tasks = _background_tasks(info)
+        user = db.scalar(select(User).where(User.email == email))
+        if user is not None:
+            token = create_password_reset_token(str(user.id))
+            if not settings.test_mode:
+                background_tasks.add_task(_queue_reset_email, user.email, user.full_name, token)
+        return True
+
+    @strawberry.mutation
+    def resetPassword(self, info: Info, token: str, new_password: str) -> bool:
+        db = _db(info)
+        try:
+            user_id = get_token_subject(token, expected_type="reset_password")
+        except Exception:
+            raise Exception("Token không hợp lệ hoặc đã hết hạn")
+        
+        user = db.scalar(select(User).where(User.id == user_id))
+        if not user:
+            raise Exception("Không tìm thấy người dùng")
+            
+        user.password_hash = hash_password(new_password)
         db.commit()
         return True
