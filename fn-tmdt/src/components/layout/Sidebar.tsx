@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, TrendingUp, Users, Settings, HelpCircle, Activity } from 'lucide-react';
+import { Home, TrendingUp, Users, Settings, HelpCircle, Activity, Heart } from 'lucide-react';
 import { useSystemStatus } from '../../hooks/useSystemStatus';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@apollo/client/react';
@@ -112,6 +112,16 @@ export const Sidebar: React.FC = () => {
         >
           <Users size={20} fill={currentPath === '/following' ? 'currentColor' : 'none'} />
           <span>Đang theo dõi</span>
+        </Link>
+        <Link
+          className={`flex items-center gap-3 rounded-full px-4 py-2 transition-all duration-300 ${currentPath === '/collection'
+            ? 'bg-surface-container-lowest text-tertiary shadow-sm'
+            : 'text-on-surface-variant hover:bg-surface-bright'
+          }`}
+          to="/collection"
+        >
+          <Heart size={20} fill={currentPath === '/collection' ? 'currentColor' : 'none'} />
+          <span>Bộ sưu tập</span>
         </Link>
       </nav>
 

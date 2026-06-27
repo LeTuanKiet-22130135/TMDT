@@ -4,6 +4,8 @@ from typing import Optional
 import typer
 
 app = typer.Typer(help="TMDT database & file storage backup/restore tool")
+user_app = typer.Typer(help="Quản lý tài khoản người dùng")
+app.add_typer(user_app, name="user")
 
 
 @app.command()
@@ -40,6 +42,51 @@ def import_cmd(
         overwrite_db=overwrite,
     )
     typer.echo("\n✓ Import complete")
+
+
+@user_app.command("create")
+def user_create():
+    """Tạo tài khoản mới."""
+    from src.user_manager import create_user, user_exists, pick_role
+
+    email = typer.prompt("Email").strip()
+    if user_exists(email):
+        typer.echo(f"Lỗi: email '{email}' đã tồn tại.", err=True)
+        raise typer.Exit(1)
+
+    full_name = typer.prompt("Họ tên").strip()
+    password = typer.prompt("Mật khẩu", hide_input=True, confirmation_prompt=True)
+    role = pick_role("Chọn role")
+
+    create_user(email, full_name, password, role)
+
+
+@user_app.command("change-password")
+def user_change_password():
+    """Đổi mật khẩu (không cần mật khẩu cũ)."""
+    from src.user_manager import change_password, user_exists
+
+    email = typer.prompt("Email").strip()
+    if not user_exists(email):
+        typer.echo(f"Lỗi: không tìm thấy '{email}'.", err=True)
+        raise typer.Exit(1)
+
+    new_password = typer.prompt("Mật khẩu mới", hide_input=True, confirmation_prompt=True)
+    change_password(email, new_password)
+
+
+@user_app.command("change-role")
+def user_change_role():
+    """Thay đổi role."""
+    from src.user_manager import change_role, user_exists, pick_role
+
+    email = typer.prompt("Email").strip()
+    if not user_exists(email):
+        typer.echo(f"Lỗi: không tìm thấy '{email}'.", err=True)
+        raise typer.Exit(1)
+
+    role = pick_role("Chọn role mới")
+    change_role(email, role)
 
 
 if __name__ == "__main__":

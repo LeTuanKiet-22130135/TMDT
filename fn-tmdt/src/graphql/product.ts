@@ -48,6 +48,36 @@ export const UNFOLLOW_MUTATION = gql`
   }
 `;
 
+export const MY_LIKED_PRODUCTS_QUERY = gql`
+  query MyLikedProducts {
+    myLikedProducts {
+      id
+      name
+      price
+      imageUrls
+      store { id name owner { username fullName avatarUrl shortlink } }
+    }
+  }
+`;
+
+export const IS_LIKED_QUERY = gql`
+  query IsLiked($productId: UUID!) {
+    isLiked(productId: $productId)
+  }
+`;
+
+export const LIKE_PRODUCT_MUTATION = gql`
+  mutation LikeProduct($productId: UUID!) {
+    likeProduct(productId: $productId)
+  }
+`;
+
+export const UNLIKE_PRODUCT_MUTATION = gql`
+  mutation UnlikeProduct($productId: UUID!) {
+    unlikeProduct(productId: $productId)
+  }
+`;
+
 export const MY_PURCHASED_IDS_QUERY = gql`
   query MyPurchasedProductIds {
     myPurchasedProductIds

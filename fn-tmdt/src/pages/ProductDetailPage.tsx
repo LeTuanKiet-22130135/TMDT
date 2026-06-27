@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Star, ShoppingCart, FolderPlus, Check, Loader2, MessageSquare, Pencil } from 'lucide-react';
+import { Star, ShoppingCart, Heart, Check, Loader2, MessageSquare, Pencil } from 'lucide-react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { client } from '../apollo';
 import {
@@ -9,6 +9,10 @@ import {
   FOLLOW_MUTATION,
   UNFOLLOW_MUTATION,
   MY_FOLLOWED_AUTHORS_QUERY,
+  IS_LIKED_QUERY,
+  LIKE_PRODUCT_MUTATION,
+  UNLIKE_PRODUCT_MUTATION,
+  MY_LIKED_PRODUCTS_QUERY,
 } from '../graphql/product';
 import { GET_PRODUCT_REVIEWS, ADD_REVIEW_MUTATION } from '../graphql/review';
 import { Header } from '../components/layout/Header';
@@ -77,6 +81,35 @@ export const ProductDetailPage: React.FC = () => {
   const [unfollowMutate] = useMutation(UNFOLLOW_MUTATION, {
     refetchQueries: [{ query: MY_FOLLOWED_AUTHORS_QUERY }],
   });
+
+  const { data: likedData, refetch: refetchLiked } = useQuery<{ isLiked: boolean }>(
+    IS_LIKED_QUERY,
+    { variables: { productId: id }, skip: !token || !id, fetchPolicy: 'cache-and-network' }
+  );
+  const isLiked = likedData?.isLiked ?? false;
+  const [likeLoading, setLikeLoading] = useState(false);
+
+  const [likeMutate] = useMutation(LIKE_PRODUCT_MUTATION, {
+    refetchQueries: [{ query: MY_LIKED_PRODUCTS_QUERY }],
+  });
+  const [unlikeMutate] = useMutation(UNLIKE_PRODUCT_MUTATION, {
+    refetchQueries: [{ query: MY_LIKED_PRODUCTS_QUERY }],
+  });
+
+  const handleLikeToggle = async () => {
+    if (!token) return;
+    setLikeLoading(true);
+    try {
+      if (isLiked) {
+        await unlikeMutate({ variables: { productId: id } });
+      } else {
+        await likeMutate({ variables: { productId: id } });
+      }
+      await refetchLiked();
+    } finally {
+      setLikeLoading(false);
+    }
+  };
 
   const handleFollowToggle = async () => {
     if (!token) return;
@@ -396,11 +429,16 @@ export const ProductDetailPage: React.FC = () => {
                       </button>
 
                       <button
-                        onClick={() => alert('Đã thêm tài nguyên vào thư viện cá nhân.')}
-                        className="w-full py-4 bg-[#E9E5FF] hover:bg-[#E3Dffd] text-[#635BFF] rounded-full font-bold transition-colors flex items-center justify-center gap-2"
+                        onClick={handleLikeToggle}
+                        disabled={likeLoading || !token}
+                        className={`w-full py-4 rounded-full font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${
+                          isLiked
+                            ? 'bg-[#FFF1F3] border border-[#F65C88] text-[#F65C88] hover:bg-[#FFE4EA]'
+                            : 'bg-[#E9E5FF] hover:bg-[#E3Dffd] text-[#635BFF]'
+                        }`}
                       >
-                        <FolderPlus size={18} />
-                        <span>Thêm vào thư viện</span>
+                        <Heart size={18} fill={isLiked ? 'currentColor' : 'none'} />
+                        <span>{isLiked ? 'Đã thích' : 'Thêm vào bộ sưu tập'}</span>
                       </button>
                     </>
                   )}

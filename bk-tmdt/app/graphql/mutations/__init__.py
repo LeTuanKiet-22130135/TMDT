@@ -7,7 +7,8 @@ from app.graphql.mutations.admin import AdminMutation
 from app.graphql.mutations.follow import FollowMutation
 from app.graphql.mutations.review import ReviewMutation
 from app.graphql.mutations.comment import CommentMutation
+from app.graphql.mutations.like import LikeMutation
 
 @strawberry.type
-class Mutation(AuthMutation, UserMutation, ProductMutation, AdminMutation, FollowMutation, ReviewMutation, CommentMutation):
+class Mutation(AuthMutation, UserMutation, ProductMutation, AdminMutation, FollowMutation, ReviewMutation, CommentMutation, LikeMutation):
     pass

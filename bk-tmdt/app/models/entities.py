@@ -119,6 +119,7 @@ class User(Base, TimestampMixin):
     reports_against_user: Mapped[list["Report"]] = relationship(back_populates="reported_user", foreign_keys="Report.reported_user_id")
     following: Mapped[list["UserFollow"]] = relationship(back_populates="follower", foreign_keys="UserFollow.follower_id", cascade="all, delete-orphan")
     followers: Mapped[list["UserFollow"]] = relationship(back_populates="followed", foreign_keys="UserFollow.followed_id", cascade="all, delete-orphan")
+    liked_products: Mapped[list["ProductLike"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
 class Store(Base, TimestampMixin):
@@ -186,6 +187,7 @@ class Product(Base, TimestampMixin):
     order_items: Mapped[list["OrderItem"]] = relationship(back_populates="product")
     reviews: Mapped[list["Review"]] = relationship(back_populates="product")
     comments: Mapped[list["Comment"]] = relationship(back_populates="product")
+    likes: Mapped[list["ProductLike"]] = relationship(back_populates="product", cascade="all, delete-orphan")
 
 
 class ShoppingCart(Base):
@@ -287,6 +289,18 @@ class UserFollow(Base, CreatedAtMixin):
 
     follower: Mapped[User] = relationship("User", foreign_keys=[follower_id], back_populates="following")
     followed: Mapped[User] = relationship("User", foreign_keys=[followed_id], back_populates="followers")
+
+
+class ProductLike(Base, CreatedAtMixin):
+    __tablename__ = "product_likes"
+    __table_args__ = (UniqueConstraint("user_id", "product_id", name="uq_product_likes_user_product"),)
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    product_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
+
+    user: Mapped[User] = relationship("User", back_populates="liked_products")
+    product: Mapped["Product"] = relationship("Product", back_populates="likes")
 
 
 class Comment(Base, TimestampMixin):

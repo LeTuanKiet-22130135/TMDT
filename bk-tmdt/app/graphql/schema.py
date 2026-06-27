@@ -54,7 +54,7 @@ from app.graphql.types import (
     RevenueDataPointType,
     CategoryRevenueDataPointType,
 )
-from app.models import Category, User, Order, OrderItem, Report, Product, Store, RoleEnum, OrderStatusEnum, UserFollow, Review, Comment
+from app.models import Category, User, Order, OrderItem, Report, Product, Store, RoleEnum, OrderStatusEnum, UserFollow, Review, Comment, ProductLike
 
 
 
@@ -121,6 +121,33 @@ class Query:
             .distinct()
         )
         return [str(pid) for pid in db.scalars(stmt).all()]
+
+    @strawberry.field
+    def my_liked_products(self, info: Info) -> list[ProductType]:
+        user = _current_user(info)
+        if user is None:
+            return []
+        db = _db(info)
+        stmt = (
+            select(Product)
+            .join(ProductLike, ProductLike.product_id == Product.id)
+            .where(ProductLike.user_id == user.id, Product.is_active == True)
+            .order_by(ProductLike.created_at.desc())
+        )
+        return [to_product_type(p) for p in db.scalars(stmt).all()]
+
+    @strawberry.field
+    def is_liked(self, info: Info, product_id: UUID) -> bool:
+        user = _current_user(info)
+        if user is None:
+            return False
+        db = _db(info)
+        return db.scalar(
+            select(func.count(ProductLike.id)).where(
+                ProductLike.user_id == user.id,
+                ProductLike.product_id == product_id,
+            )
+        ) > 0
 
     @strawberry.field
     def my_followed_authors(self, info: Info) -> list[FollowedAuthorType]:
