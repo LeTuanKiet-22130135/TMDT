@@ -18,6 +18,7 @@ import { BottomNav } from "../../components/layout/BottomNav";
 import { Badge } from "../../components/ui/Badge";
 import { useAuthorData } from "./author.logic";
 import { resolveMediaUrl } from "../../lib/media";
+import { useUserProfile } from "../../contexts/UserProfileContext";
 import {
   IS_FOLLOWING_QUERY,
   FOLLOW_MUTATION,
@@ -39,6 +40,8 @@ export const AuthorPage: React.FC = () => {
     shortlink ?? "",
   );
   const token = localStorage.getItem("access_token");
+  const { profile: myProfile } = useUserProfile();
+  const isOwnPage = token && myProfile.shortlink && myProfile.shortlink === shortlink;
   const [followLoading, setFollowLoading] = useState(false);
 
   const { data: followData, refetch: refetchFollow } = useQuery<{
@@ -196,21 +199,23 @@ export const AuthorPage: React.FC = () => {
                     <Link2 size={18} />
                   </a>
                 )}
-                <button
-                  onClick={handleFollowToggle}
-                  disabled={followLoading || !token}
-                  className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm disabled:opacity-60 ${
-                    isFollowing
-                      ? "bg-transparent border-2 border-[#F65C88] text-[#F65C88] hover:bg-[#FFF1F3]"
-                      : "bg-gradient-to-r from-[#FF9FB1] to-[#DB2E50] text-white hover:opacity-90"
-                  }`}
-                >
-                  {followLoading
-                    ? "..."
-                    : isFollowing
-                      ? "Đang theo dõi"
-                      : "Theo dõi"}
-                </button>
+                {!isOwnPage && (
+                  <button
+                    onClick={handleFollowToggle}
+                    disabled={followLoading || !token}
+                    className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm disabled:opacity-60 ${
+                      isFollowing
+                        ? "bg-transparent border-2 border-[#F65C88] text-[#F65C88] hover:bg-[#FFF1F3]"
+                        : "bg-gradient-to-r from-[#FF9FB1] to-[#DB2E50] text-white hover:opacity-90"
+                    }`}
+                  >
+                    {followLoading
+                      ? "..."
+                      : isFollowing
+                        ? "Đang theo dõi"
+                        : "Theo dõi"}
+                  </button>
+                )}
               </div>
             </div>
 

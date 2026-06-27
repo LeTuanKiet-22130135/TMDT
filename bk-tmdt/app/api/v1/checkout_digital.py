@@ -110,6 +110,27 @@ def checkout_digital(
         order_ids.append(str(order.id))
         total_vnd += store_total
 
+    # Free checkout — skip VNPay, mark everything PAID immediately
+    if total_vnd == 0:
+        payments_to_mark = list(
+            db.scalars(select(Payment).where(Payment.transaction_id == session_id)).all()
+        )
+        for payment in payments_to_mark:
+            payment.status = PaymentStatusEnum.PAID
+            db.add(payment)
+            order = db.get(Order, payment.order_id)
+            if order:
+                order.status = OrderStatusEnum.PAID
+                db.add(order)
+        db.commit()
+        free_url = f"{body.return_url}?free=1&session_id={session_id}"
+        return DigitalCheckoutResponse(
+            session_id=session_id,
+            order_ids=order_ids,
+            total=0,
+            payment_url=free_url,
+        )
+
     db.commit()
 
     client_ip = request.client.host if request.client else "127.0.0.1"
@@ -175,4 +196,26 @@ def verify_payment(
         message="Thanh toán thành công" if success else f"Thanh toán thất bại (mã: {result['response_code']})",
         order_ids=order_ids,
         amount=result["amount"],
+    )
+
+
+@router.get("/free-verify", response_model=VerifyResponse)
+def verify_free(
+    session_id: str,
+    db: Session = Depends(get_db),
+) -> VerifyResponse:
+    payments: list[Payment] = list(
+        db.scalars(select(Payment).where(Payment.transaction_id == session_id)).all()
+    )
+    if not payments:
+        return VerifyResponse(success=False, message="Không tìm thấy giao dịch")
+
+    order_ids = [str(p.order_id) for p in payments]
+    all_paid = all(p.status == PaymentStatusEnum.PAID for p in payments)
+
+    return VerifyResponse(
+        success=all_paid,
+        message="Nhận tài nguyên thành công!" if all_paid else "Giao dịch chưa được xác nhận",
+        order_ids=order_ids,
+        amount=0,
     )

@@ -83,16 +83,54 @@ export const PRODUCT_DETAIL_QUERY = gql`
       licenseType
       softwareTags
       formatTags
+      mainFileUrl
       store {
         id
         name
         owner {
+          id
           username
           fullName
           avatarUrl
           shortlink
         }
       }
+    }
+  }
+`;
+
+export const UPDATE_PRODUCT_MUTATION = gql`
+  mutation UpdateProduct(
+    $productId: UUID!
+    $name: String
+    $description: String
+    $price: Float
+    $imageUrls: [String!]
+    $mainFileUrl: String
+    $userTags: [String!]
+    $licenseType: String
+    $softwareTags: [String!]
+    $formatTags: [String!]
+  ) {
+    updateProduct(
+      productId: $productId
+      name: $name
+      description: $description
+      price: $price
+      imageUrls: $imageUrls
+      mainFileUrl: $mainFileUrl
+      userTags: $userTags
+      licenseType: $licenseType
+      softwareTags: $softwareTags
+      formatTags: $formatTags
+    ) {
+      id
+      name
+      price
+      imageUrls
+      userTags
+      licenseType
+      updatedAt
     }
   }
 `;

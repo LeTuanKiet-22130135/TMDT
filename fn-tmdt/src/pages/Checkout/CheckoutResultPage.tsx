@@ -148,6 +148,31 @@ export const CheckoutResultPage: React.FC = () => {
 
   useEffect(() => {
     const verify = async () => {
+      const isFree = searchParams.get('free') === '1';
+      const sessionId = searchParams.get('session_id');
+
+      if (isFree && sessionId) {
+        try {
+          const res = await fetch(`${API}/api/v1/checkout-digital/free-verify?session_id=${sessionId}`);
+          const data = await res.json();
+          if (data.success) {
+            setStatus('success');
+            setMessage(data.message);
+            setAmount(0);
+            const purchased = [...itemsRef.current];
+            clearCart();
+            purchased.forEach((item) => trackEvent(userIdRef.current, item.productId, 'purchase'));
+          } else {
+            setStatus('failed');
+            setMessage(data.message);
+          }
+        } catch {
+          setStatus('failed');
+          setMessage('Không thể xác nhận. Vui lòng liên hệ hỗ trợ.');
+        }
+        return;
+      }
+
       const query = searchParams.toString();
       if (!query) {
         setStatus('failed');

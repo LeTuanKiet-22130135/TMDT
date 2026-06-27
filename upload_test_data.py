@@ -251,7 +251,7 @@ def main():
                 # Create product
                 name = random.choice(PRODUCT_NAMES) + f" #{random.randint(100, 999)}"
                 desc = random.choice(PRODUCT_DESCRIPTIONS)
-                price = round(random.uniform(10.0, 500.0), 2)
+                price = random.randint(10, 500) * 1000
                 tags = ["test", "bot-data", "automation"]
 
                 create_query = """
@@ -294,6 +294,29 @@ def main():
     # Save upload log
     with open(UPLOADED_LOG_FILE, "w") as f:
         json.dump(uploaded_files, f, indent=2)
+
+    # Fix existing products with price < 10000 in DB
+    print("\n--- Fixing low-price products in DB ---")
+    try:
+        import psycopg2
+        db_url = get_env_var("bk-tmdt/.env", "DB_URL")
+        # Convert SQLAlchemy URL to psycopg2 DSN
+        dsn = db_url.replace("postgresql+psycopg2://", "postgresql://")
+        conn = psycopg2.connect(dsn)
+        cur = conn.cursor()
+        cur.execute("SELECT id, price FROM products WHERE price < 10000")
+        rows = cur.fetchall()
+        print(f"  Found {len(rows)} products with price < 10000 VND")
+        for prod_id, old_price in rows:
+            new_price = random.randint(10, 500) * 1000
+            cur.execute("UPDATE products SET price = %s WHERE id = %s", (new_price, prod_id))
+            print(f"  Updated {prod_id}: {old_price} → {new_price} VND")
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("  Done fixing prices.")
+    except Exception as e:
+        print(f"  DB fix failed: {e}")
 
     print("\n--- Upload Process Completed ---")
 

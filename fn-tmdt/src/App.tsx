@@ -20,6 +20,7 @@ import CheckoutResultPage from "./pages/Checkout/CheckoutResultPage"
 import LibraryPage from "./pages/Library/LibraryPage"
 import FollowingFeedPage from "./pages/Following/FollowingFeedPage"
 import StatusPage from "./pages/Status/StatusPage"
+import EditProductPage from "./pages/EditProduct/EditProductPage"
 
 function CursorGlow() {
   const glowRef = useRef<HTMLDivElement>(null);
@@ -72,6 +73,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/asset/:id" element={<ProductDetailPage />} />
+          <Route path="/asset/:id/edit" element={<EditProductPage />} />
           <Route path="/custom-requests" element={<CustomRequestsPage />} />
           <Route path="/create-product" element={<CreateProductPage />} />
           <Route path="/login" element={<LoginPage />} />

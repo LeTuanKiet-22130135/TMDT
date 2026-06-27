@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Heart, Loader2, Lock, Trash2 } from 'lucide-react';
+import { ShoppingBag, Heart, Loader2, Lock, Trash2, Sparkles } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
 import { formatPrice } from '../../components/Cart/cart.logic';
 import { resolveMediaUrl } from '../../lib/media';
@@ -30,6 +30,7 @@ export const CheckoutPage: React.FC = () => {
   const subtotal = items.reduce((s, i) => s + i.price, 0);
   const totalTips = Object.values(tips).reduce((s, v) => s + (parseInt(v) || 0), 0);
   const total = subtotal + totalTips;
+  const isFree = total === 0;
 
   const handleCheckout = async () => {
     const token = localStorage.getItem('access_token');
@@ -201,6 +202,18 @@ export const CheckoutPage: React.FC = () => {
                 </div>
               </div>
 
+              {isFree && (
+                <div className="bg-gradient-to-br from-[#FFF1F3] to-[#F0F5FF] border border-[#FFC9D2]/60 rounded-2xl px-4 py-3 flex flex-col gap-1">
+                  <div className="flex items-center gap-1.5 text-[#F65C88] font-bold text-sm">
+                    <Sparkles size={14} />
+                    <span>Miễn phí hoàn toàn!</span>
+                  </div>
+                  <p className="text-xs text-[#040316]/60 leading-relaxed">
+                    Nếu bạn thích tác phẩm này, hãy follow tác giả và tip một chút để ủng hộ họ nhé — mỗi đồng tip đều có ý nghĩa lớn với người sáng tạo!
+                  </p>
+                </div>
+              )}
+
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-xs text-red-600">
                   {error}
@@ -214,6 +227,11 @@ export const CheckoutPage: React.FC = () => {
               >
                 {loading ? (
                   <Loader2 size={18} className="animate-spin" />
+                ) : isFree ? (
+                  <>
+                    <Sparkles size={16} />
+                    <span>Nhận miễn phí</span>
+                  </>
                 ) : (
                   <>
                     <Lock size={16} />
@@ -222,10 +240,12 @@ export const CheckoutPage: React.FC = () => {
                 )}
               </button>
 
-              <div className="flex items-center justify-center gap-2 text-[10px] text-[#040316]/40">
-                <Lock size={10} />
-                <span>Bảo mật bởi VNPay · SSL encrypted</span>
-              </div>
+              {!isFree && (
+                <div className="flex items-center justify-center gap-2 text-[10px] text-[#040316]/40">
+                  <Lock size={10} />
+                  <span>Bảo mật bởi VNPay · SSL encrypted</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

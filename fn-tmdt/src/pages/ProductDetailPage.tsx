@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Star, ShoppingCart, FolderPlus, Send, Check, Loader2, MessageSquare } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Star, ShoppingCart, FolderPlus, Check, Loader2, MessageSquare, Pencil } from 'lucide-react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { client } from '../apollo';
 import {
@@ -33,10 +33,12 @@ interface ProductDetail {
   licenseType: string;
   softwareTags: string[];
   formatTags: string[];
+  mainFileUrl: string | null;
   store: {
     id: string;
     name: string;
     owner: {
+      id: string;
       username: string;
       fullName: string;
       avatarUrl: string | null;
@@ -47,6 +49,7 @@ interface ProductDetail {
 
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { addItem, openCart, items, addedProductId } = useCart();
   const purchasedIds = usePurchasedProductIds();
   const { profile } = useUserProfile();
@@ -146,6 +149,7 @@ export const ProductDetailPage: React.FC = () => {
 
   const alreadyInCart = items.some((i) => i.productId === product.id);
   const alreadyPurchased = purchasedIds.has(product.id);
+  const isOwner = !!profile.id && profile.id === product.store.owner.id;
 
   const handleAddToCart = () => {
     if (alreadyPurchased) return;
@@ -291,17 +295,19 @@ export const ProductDetailPage: React.FC = () => {
                     <p className="text-xs text-on-surface-variant/75 mt-0.5">@{owner.shortlink} • {product.store.name}</p>
                   </div>
                 </Link>
-                <button
-                  onClick={handleFollowToggle}
-                  disabled={followLoading || !token}
-                  className={`px-5 py-2 rounded-full text-xs font-bold transition-all shadow-sm whitespace-nowrap disabled:opacity-50 ${
-                    isFollowing
-                      ? 'bg-transparent border border-[#F65C88] text-[#F65C88] hover:bg-[#FFF1F3]'
-                      : 'bg-white text-[#040316] hover:bg-white/90'
-                  }`}
-                >
-                  {followLoading ? '...' : isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
-                </button>
+                {!isOwner && (
+                  <button
+                    onClick={handleFollowToggle}
+                    disabled={followLoading || !token}
+                    className={`px-5 py-2 rounded-full text-xs font-bold transition-all shadow-sm whitespace-nowrap disabled:opacity-50 ${
+                      isFollowing
+                        ? 'bg-transparent border border-[#F65C88] text-[#F65C88] hover:bg-[#FFF1F3]'
+                        : 'bg-white text-[#040316] hover:bg-white/90'
+                    }`}
+                  >
+                    {followLoading ? '...' : isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
+                  </button>
+                )}
               </div>
 
               {/* Description */}
@@ -339,53 +345,65 @@ export const ProductDetailPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  {/* Add to cart with animation */}
-                  <button
-                    onClick={handleAddToCart}
-                    disabled={alreadyPurchased}
-                    className={`relative w-full py-4 rounded-full font-bold shadow-md transition-all flex items-center justify-center gap-2 overflow-hidden
-                      ${alreadyPurchased
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : addedAnim
-                          ? 'bg-green-500 scale-[0.97] text-white'
-                          : alreadyInCart
-                            ? 'bg-[#E9E5FF] text-[#635BFF] hover:bg-[#E3Dffd]'
-                            : 'bg-gradient-to-r from-[#FF9FB1] via-[#F65C88] to-[#DB2E50] text-white hover:scale-[1.01] active:scale-100'
-                      }`}
-                  >
-                    {!alreadyPurchased && addedAnim && (
-                      <span className="absolute inset-0 animate-ping rounded-full bg-green-400 opacity-30" />
-                    )}
-                    {alreadyPurchased ? (
-                      <>
-                        <Check size={18} />
-                        <span>Đã mua</span>
-                      </>
-                    ) : addedAnim ? (
-                      <>
-                        <Check size={18} className="animate-bounce" />
-                        <span>Đã thêm!</span>
-                      </>
-                    ) : alreadyInCart ? (
-                      <>
-                        <Check size={18} />
-                        <span>Đã có trong giỏ — Xem giỏ hàng</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingCart size={18} />
-                        <span>Thêm vào giỏ</span>
-                      </>
-                    )}
-                  </button>
+                  {isOwner ? (
+                    <button
+                      onClick={() => navigate(`/asset/${product.id}/edit`)}
+                      className="w-full py-4 rounded-full font-bold shadow-md transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-[#FF9FB1] via-[#F65C88] to-[#DB2E50] text-white hover:scale-[1.01] active:scale-100"
+                    >
+                      <Pencil size={18} />
+                      <span>Chỉnh sửa sản phẩm</span>
+                    </button>
+                  ) : (
+                    <>
+                      {/* Add to cart with animation */}
+                      <button
+                        onClick={handleAddToCart}
+                        disabled={alreadyPurchased}
+                        className={`relative w-full py-4 rounded-full font-bold shadow-md transition-all flex items-center justify-center gap-2 overflow-hidden
+                          ${alreadyPurchased
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : addedAnim
+                              ? 'bg-green-500 scale-[0.97] text-white'
+                              : alreadyInCart
+                                ? 'bg-[#E9E5FF] text-[#635BFF] hover:bg-[#E3Dffd]'
+                                : 'bg-gradient-to-r from-[#FF9FB1] via-[#F65C88] to-[#DB2E50] text-white hover:scale-[1.01] active:scale-100'
+                          }`}
+                      >
+                        {!alreadyPurchased && addedAnim && (
+                          <span className="absolute inset-0 animate-ping rounded-full bg-green-400 opacity-30" />
+                        )}
+                        {alreadyPurchased ? (
+                          <>
+                            <Check size={18} />
+                            <span>Đã mua</span>
+                          </>
+                        ) : addedAnim ? (
+                          <>
+                            <Check size={18} className="animate-bounce" />
+                            <span>Đã thêm!</span>
+                          </>
+                        ) : alreadyInCart ? (
+                          <>
+                            <Check size={18} />
+                            <span>Đã có trong giỏ — Xem giỏ hàng</span>
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingCart size={18} />
+                            <span>Thêm vào giỏ</span>
+                          </>
+                        )}
+                      </button>
 
-                  <button
-                    onClick={() => alert('Đã thêm tài nguyên vào thư viện cá nhân.')}
-                    className="w-full py-4 bg-[#E9E5FF] hover:bg-[#E3Dffd] text-[#635BFF] rounded-full font-bold transition-colors flex items-center justify-center gap-2"
-                  >
-                    <FolderPlus size={18} />
-                    <span>Thêm vào thư viện</span>
-                  </button>
+                      <button
+                        onClick={() => alert('Đã thêm tài nguyên vào thư viện cá nhân.')}
+                        className="w-full py-4 bg-[#E9E5FF] hover:bg-[#E3Dffd] text-[#635BFF] rounded-full font-bold transition-colors flex items-center justify-center gap-2"
+                      >
+                        <FolderPlus size={18} />
+                        <span>Thêm vào thư viện</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 

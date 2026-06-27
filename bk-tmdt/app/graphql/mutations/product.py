@@ -38,7 +38,58 @@ async def _trigger_cacao_index(product_id: str) -> None:
 @strawberry.type
 class ProductMutation:
     @strawberry.mutation
-    def create_product(
+    async def update_product(
+        self,
+        info: Info,
+        product_id: UUID,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        price: Optional[float] = None,
+        image_urls: Optional[list[str]] = None,
+        main_file_url: Optional[str] = None,
+        user_tags: Optional[list[str]] = None,
+        license_type: Optional[str] = None,
+        software_tags: Optional[list[str]] = None,
+        format_tags: Optional[list[str]] = None,
+    ) -> ProductType:
+        user = info.context.get("current_user")
+        if user is None:
+            raise Exception("Bạn chưa đăng nhập")
+
+        db = _db(info)
+        product = db.get(Product, product_id)
+        if product is None:
+            raise Exception("Sản phẩm không tồn tại")
+
+        store = db.get(Store, product.store_id)
+        if store is None or store.owner_id != user.id:
+            raise Exception("Bạn không có quyền chỉnh sửa sản phẩm này")
+
+        if name is not None:
+            product.name = name.strip()
+        if description is not None:
+            product.description = description.strip()
+        if price is not None:
+            product.price = price
+        if image_urls is not None:
+            product.image_urls = image_urls
+        if main_file_url is not None:
+            product.main_file_url = main_file_url
+        if user_tags is not None:
+            product.user_tags = user_tags
+        if license_type is not None:
+            product.license_type = license_type
+        if software_tags is not None:
+            product.software_tags = software_tags
+        if format_tags is not None:
+            product.format_tags = format_tags
+
+        db.commit()
+        db.refresh(product)
+        return to_product_type(product)
+
+    @strawberry.mutation
+    async def create_product(
         self,
         info: Info,
         name: str,
