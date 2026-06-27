@@ -1,13 +1,16 @@
 FROM python:3.13-slim
 
+# ARM-slim cần libpq-dev + gcc để build psycopg2-binary
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev gcc && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-# Cài đặt uv
-RUN pip install uv
+RUN pip install uv --no-cache-dir
 
 COPY pyproject.toml uv.lock ./
 
-# Cài đặt các dependencies
+# --no-dev: loại pytest; --frozen: dùng exact lock
 RUN uv sync --frozen --no-dev
 
 COPY . .

@@ -19,7 +19,7 @@ _embedder: SentenceTransformer | None = None
 def _get_embedder() -> SentenceTransformer:
     global _embedder
     if _embedder is None:
-        _embedder = SentenceTransformer(_MODEL_NAME)
+        _embedder = SentenceTransformer(_MODEL_NAME, backend="onnx")
     return _embedder
 
 
