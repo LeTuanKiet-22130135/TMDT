@@ -9,6 +9,8 @@ COPY . .
 
 ARG VITE_API_URL=https://devb1.orifen.duckdns.org
 ENV VITE_API_URL=$VITE_API_URL
+ARG VITE_CACAO_URL=https://devcacao.orifen.duckdns.org
+ENV VITE_CACAO_URL=$VITE_CACAO_URL
 
 RUN npm run build
 

@@ -36,6 +36,7 @@ export const CollectionPage: React.FC = () => {
     imageUrl: p.imageUrls?.[0] ?? null,
     tags: [],
     licenseType: '',
+    createdAt: '',
     authorName: p.store.owner.fullName || p.store.name,
     authorAvatar: p.store.owner.avatarUrl,
     authorShortlink: p.store.owner.shortlink,

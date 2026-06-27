@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import type { HomeProduct } from './home.logic';
 import { resolveMediaUrl } from '../../lib/media';
 import { useCart } from '../../contexts/CartContext';

@@ -138,7 +138,9 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ isOpen, activeTab, onT
   const [aiPromptText, setAiPromptText] = useState('');
   const [visibleSteps, setVisibleSteps] = useState(0);
 
-  const [runAISearch, { loading: aiLoading, data: aiData, error: aiError }] = useLazyQuery(AI_SEARCH_PRODUCTS_QUERY, {
+  const [runAISearch, { loading: aiLoading, data: aiData, error: aiError }] = useLazyQuery<{
+    searchProductsByAi: { products: unknown[]; step: string; keywordUsed: string };
+  }>(AI_SEARCH_PRODUCTS_QUERY, {
     client: cacaoClient,
     fetchPolicy: 'network-only',
   });
