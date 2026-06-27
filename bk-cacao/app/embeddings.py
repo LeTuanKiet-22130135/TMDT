@@ -1,25 +1,24 @@
 """
-Local text embedding using sentence-transformers.
-Model: intfloat/multilingual-e5-small (~117MB, 384 dims, Vietnamese-capable).
-Downloaded once to ~/.cache/huggingface/hub/ on first use.
-
-E5 models require a task prefix:
-  "passage: <text>"  — for documents (products)
-  "query: <text>"    — for search queries
+Local text embedding using fastembed (onnxruntime-only, no torch).
+Model: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+  - 384 dims (khớp pgvector schema)
+  - ~220MB, multilingual (Vietnamese OK)
+  - No task prefix needed (unlike E5)
+Downloaded once to ~/.cache/fastembed/ on first use.
 """
 
 from typing import List
 
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 
-_MODEL_NAME = "intfloat/multilingual-e5-small"
-_embedder: SentenceTransformer | None = None
+_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+_embedder: TextEmbedding | None = None
 
 
-def _get_embedder() -> SentenceTransformer:
+def _get_embedder() -> TextEmbedding:
     global _embedder
     if _embedder is None:
-        _embedder = SentenceTransformer(_MODEL_NAME, backend="onnx")
+        _embedder = TextEmbedding(_MODEL_NAME)
     return _embedder
 
 
@@ -33,9 +32,11 @@ def build_product_text(name: str, description: str | None, tags: List[str]) -> s
 
 
 def embed_product(name: str, description: str | None, tags: List[str]) -> List[float]:
-    text = "passage: " + build_product_text(name, description, tags)
-    return _get_embedder().encode(text, normalize_embeddings=True).tolist()
+    text = build_product_text(name, description, tags)
+    result = list(_get_embedder().embed([text]))
+    return result[0].tolist()
 
 
 def embed_query(query: str) -> List[float]:
-    return _get_embedder().encode(f"query: {query}", normalize_embeddings=True).tolist()
+    result = list(_get_embedder().embed([query]))
+    return result[0].tolist()

@@ -18,6 +18,7 @@ services:
     environment:
       - DB_URL=postgresql+psycopg2://postgres:${DB_PASS:-123}@db:5432/tmdt
       - TEST_MODE=true
+      - TMDT_INTERNAL_URL=http://bk-tmdt:8000
     volumes:
       - ./volumes/uploads:/app/uploads
     depends_on:

@@ -12,3 +12,4 @@ fn-admin/.env
 fn-tmdt/.env
 agent_credentials.txt
 bk-cacao/.env
+.env.production
