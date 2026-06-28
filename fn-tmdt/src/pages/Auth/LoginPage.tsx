@@ -32,7 +32,9 @@ const LoginPage: React.FC = () => {
       notifyLogin();
       navigate('/');
     } catch (error: any) {
-      setErrorMsg(error.response?.data?.detail || t('auth.login.error'));
+      const detail = error.response?.data?.detail;
+      const msg = Array.isArray(detail) ? detail.map((d: any) => d.msg).join(', ') : detail;
+      setErrorMsg(msg || t('auth.login.error'));
     } finally {
       setLoading(false);
     }
@@ -45,7 +47,9 @@ const LoginPage: React.FC = () => {
       notifyLogin();
       navigate('/');
     } catch (error: any) {
-      setErrorMsg(error.response?.data?.detail || t('auth.login.error'));
+      const detail = error.response?.data?.detail;
+      const msg = Array.isArray(detail) ? detail.map((d: any) => d.msg).join(', ') : detail;
+      setErrorMsg(msg || t('auth.login.error'));
     }
   };
 
@@ -57,7 +61,9 @@ const LoginPage: React.FC = () => {
         notifyLogin();
         navigate('/');
       } catch (error: any) {
-        setErrorMsg(error.response?.data?.detail || t('auth.login.error'));
+        const detail = error.response?.data?.detail;
+        const msg = Array.isArray(detail) ? detail.map((d: any) => d.msg).join(', ') : detail;
+        setErrorMsg(msg || t('auth.login.error'));
       }
     }
   };

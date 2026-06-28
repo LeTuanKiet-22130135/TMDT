@@ -36,7 +36,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
       onSuccess();
       onClose();
     } catch (error: any) {
-      setErrorMsg(error.response?.data?.detail || t('auth.login.error'));
+      const detail = error.response?.data?.detail;
+      const msg = Array.isArray(detail) ? detail.map((d: any) => d.msg).join(', ') : detail;
+      setErrorMsg(msg || t('auth.login.error'));
     } finally {
       setLoading(false);
     }
@@ -50,7 +52,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
       onSuccess();
       onClose();
     } catch (error: any) {
-      setErrorMsg(error.response?.data?.detail || t('auth.login.error'));
+      const detail = error.response?.data?.detail;
+      const msg = Array.isArray(detail) ? detail.map((d: any) => d.msg).join(', ') : detail;
+      setErrorMsg(msg || t('auth.login.error'));
     }
   };
 
@@ -63,7 +67,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
         onSuccess();
         onClose();
       } catch (error: any) {
-        setErrorMsg(error.response?.data?.detail || t('auth.login.error'));
+        const detail = error.response?.data?.detail;
+        const msg = Array.isArray(detail) ? detail.map((d: any) => d.msg).join(', ') : detail;
+        setErrorMsg(msg || t('auth.login.error'));
       }
     }
   };

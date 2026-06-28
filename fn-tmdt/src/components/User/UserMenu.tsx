@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Settings, LogOut, Package, User, Store } from 'lucide-react';
+import { Settings, LogOut, Package, User, Store, BarChart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useUserProfile } from '../../contexts/UserProfileContext';
 
@@ -77,6 +77,12 @@ export const UserMenu: React.FC = () => {
               <Store size={18} className="mr-3 text-gray-400" />
               <span className="font-medium text-sm">{t('user.menu.shops')}</span>
             </Link>
+            {(profile.role === 'SELLER' || profile.role === 'ARTIST') && (
+              <Link to="/revenue" onClick={() => setIsOpen(false)} className="flex items-center px-6 py-3 hover:bg-gray-50 transition-colors text-gray-700">
+                <BarChart size={18} className="mr-3 text-gray-400" />
+                <span className="font-medium text-sm">Doanh thu</span>
+              </Link>
+            )}
             <Link to="/settings" onClick={() => setIsOpen(false)} className="flex items-center px-6 py-3 hover:bg-gray-50 transition-colors text-gray-700">
               <Settings size={18} className="mr-3 text-gray-400" />
               <span className="font-medium text-sm">{t('user.menu.settings')}</span>

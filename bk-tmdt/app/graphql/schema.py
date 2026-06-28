@@ -23,6 +23,7 @@ from app.crud.products import (
 )
 from app.crud.stores import get_store, search_stores
 from app.graphql.context import get_graphql_context
+from app.graphql.analytics import AnalyticsQuery
 from decimal import Decimal
 from sqlalchemy import select, func
 from app.graphql.types import (
@@ -75,7 +76,7 @@ def _current_user(info: Info) -> User | None:
 
 
 @strawberry.type
-class Query:
+class Query(AnalyticsQuery):
     @strawberry.field
     def categories(self, info: Info) -> list[CategoryType]:
         return [to_category_type(c) for c in _db(info).scalars(select(Category)).all()]
