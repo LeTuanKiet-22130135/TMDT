@@ -23,3 +23,19 @@ export const MY_WALLET_QUERY = gql`
     }
   }
 `;
+
+export const REQUEST_WITHDRAWAL_MUTATION = gql`
+  mutation RequestWithdrawal($amount: Float!, $bankDetails: String!) {
+    requestWithdrawal(amount: $amount, bankDetails: $bankDetails) {
+      id
+      walletId
+      amount
+      balanceBefore
+      balanceAfter
+      transactionType
+      status
+      referenceId
+      createdAt
+    }
+  }
+`;

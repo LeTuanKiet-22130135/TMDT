@@ -149,9 +149,10 @@ export const CheckoutResultPage: React.FC = () => {
   useEffect(() => {
     const verify = async () => {
       const isFree = searchParams.get('free') === '1';
+      const isWallet = searchParams.get('wallet') === '1';
       const sessionId = searchParams.get('session_id');
 
-      if (isFree && sessionId) {
+      if ((isFree || isWallet) && sessionId) {
         try {
           const res = await fetch(`${API}/api/v1/checkout-digital/free-verify?session_id=${sessionId}`);
           const data = await res.json();

@@ -4,7 +4,7 @@ import strawberry
 from strawberry.types import Info
 
 from app.models import User, Product, Store, Report, RoleEnum, ReportStatusEnum
-from app.graphql.types import to_user_type, to_product_type, to_store_type, to_report_type, UserType, ProductType, StoreType, ReportType
+from app.graphql.types import to_user_type, to_product_type, to_store_type, to_report_type, UserType, ProductType, StoreType, ReportType, WalletTransactionType, to_wallet_transaction_type
 from app.graphql.mutations.utils import _db
 
 @strawberry.type
@@ -93,3 +93,59 @@ class AdminMutation:
         db.commit()
         db.refresh(report)
         return to_report_type(report)
+
+    @strawberry.mutation
+    def approveWithdrawal(self, info: Info, transactionId: UUID) -> WalletTransactionType:
+        from app.models.entities import WalletTransaction, WalletTransactionStatusEnum, WalletTransactionTypeEnum
+        user = info.context.get("current_user")
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Không có quyền thực hiện thao tác này")
+        
+        db = _db(info)
+        txn = db.query(WalletTransaction).filter(WalletTransaction.id == transactionId).with_for_update().first()
+        if txn is None:
+            raise Exception("Không tìm thấy giao dịch")
+            
+        if txn.transaction_type != WalletTransactionTypeEnum.WITHDRAWAL:
+            raise Exception("Giao dịch này không phải là yêu cầu rút tiền")
+            
+        if txn.status != WalletTransactionStatusEnum.PENDING:
+            raise Exception("Chỉ có thể duyệt các yêu cầu đang chờ xử lý")
+            
+        txn.status = WalletTransactionStatusEnum.SUCCESS
+        db.add(txn)
+        db.commit()
+        db.refresh(txn)
+        
+        return to_wallet_transaction_type(txn)
+
+    @strawberry.mutation
+    def rejectWithdrawal(self, info: Info, transactionId: UUID) -> WalletTransactionType:
+        from app.models.entities import WalletTransaction, WalletTransactionStatusEnum, WalletTransactionTypeEnum, Wallet
+        user = info.context.get("current_user")
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Không có quyền thực hiện thao tác này")
+        
+        db = _db(info)
+        txn = db.query(WalletTransaction).filter(WalletTransaction.id == transactionId).with_for_update().first()
+        if txn is None:
+            raise Exception("Không tìm thấy giao dịch")
+            
+        if txn.transaction_type != WalletTransactionTypeEnum.WITHDRAWAL:
+            raise Exception("Giao dịch này không phải là yêu cầu rút tiền")
+            
+        if txn.status != WalletTransactionStatusEnum.PENDING:
+            raise Exception("Chỉ có thể từ chối các yêu cầu đang chờ xử lý")
+            
+        # Refund the money to wallet
+        wallet = db.query(Wallet).filter(Wallet.id == txn.wallet_id).with_for_update().first()
+        if wallet:
+            wallet.balance += txn.amount
+            db.add(wallet)
+            
+        txn.status = WalletTransactionStatusEnum.FAILED
+        db.add(txn)
+        db.commit()
+        db.refresh(txn)
+        
+        return to_wallet_transaction_type(txn)

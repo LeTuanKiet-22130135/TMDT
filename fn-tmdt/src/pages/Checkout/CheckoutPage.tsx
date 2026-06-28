@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Heart, Loader2, Lock, Trash2, Sparkles } from 'lucide-react';
+import { ShoppingBag, Heart, Loader2, Lock, Trash2, Sparkles, Wallet } from 'lucide-react';
+import { useQuery } from '@apollo/client/react';
 import { useCart } from '../../contexts/CartContext';
 import { formatPrice } from '../../components/Cart/cart.logic';
 import { resolveMediaUrl } from '../../lib/media';
 import { Header } from '../../components/layout/Header';
+import { MY_WALLET_QUERY } from '../../graphql/wallet';
 
 const API = import.meta.env.VITE_API_URL || '';
 
@@ -25,6 +27,10 @@ export const CheckoutPage: React.FC = () => {
   const [tips, setTips] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'VNPAY' | 'WALLET'>('VNPAY');
+
+  const { data: walletData } = useQuery(MY_WALLET_QUERY);
+  const walletBalance = walletData?.myWallet?.balance ?? 0;
 
   const grouped = groupByStore(items);
   const subtotal = items.reduce((s, i) => s + i.price, 0);
@@ -58,6 +64,7 @@ export const CheckoutPage: React.FC = () => {
               .map(([k, v]) => [k, parseInt(v)])
           ),
           return_url: `${window.location.origin}/checkout/result`,
+          payment_method: paymentMethod,
         }),
       });
 
@@ -214,6 +221,32 @@ export const CheckoutPage: React.FC = () => {
                 </div>
               )}
 
+              {!isFree && (
+                <div className="flex flex-col gap-3 mt-2">
+                  <h3 className="font-bold text-sm text-[#040316]/80">Phương thức thanh toán</h3>
+                  
+                  <label className={`border rounded-xl p-3 flex flex-col gap-1 cursor-pointer transition-colors ${paymentMethod === 'VNPAY' ? 'border-[#F65C88] bg-[#FFF1F3]' : 'border-[#FFC9D2]/30 bg-white/50 hover:bg-white/80'}`}>
+                    <div className="flex items-center gap-2">
+                      <input type="radio" name="paymentMethod" value="VNPAY" checked={paymentMethod === 'VNPAY'} onChange={() => setPaymentMethod('VNPAY')} className="accent-[#F65C88]" />
+                      <span className="font-semibold text-sm">Thanh toán qua VNPay</span>
+                    </div>
+                  </label>
+
+                  <label className={`border rounded-xl p-3 flex flex-col gap-1 cursor-pointer transition-colors ${paymentMethod === 'WALLET' ? 'border-[#F65C88] bg-[#FFF1F3]' : 'border-[#FFC9D2]/30 bg-white/50 hover:bg-white/80'}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <input type="radio" name="paymentMethod" value="WALLET" checked={paymentMethod === 'WALLET'} onChange={() => setPaymentMethod('WALLET')} className="accent-[#F65C88]" />
+                        <span className="font-semibold text-sm">Ví nội bộ</span>
+                      </div>
+                      <span className="text-xs font-bold text-[#F65C88]">{formatPrice(walletBalance)}</span>
+                    </div>
+                    {walletBalance < total && paymentMethod === 'WALLET' && (
+                      <div className="text-xs text-red-500 mt-1 ml-6">Số dư không đủ. Vui lòng nạp thêm tiền.</div>
+                    )}
+                  </label>
+                </div>
+              )}
+
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-xs text-red-600">
                   {error}
@@ -222,8 +255,8 @@ export const CheckoutPage: React.FC = () => {
 
               <button
                 onClick={handleCheckout}
-                disabled={loading}
-                className="w-[calc(100%+20px)] -mx-[10px] py-4 bg-gradient-to-r from-[#FF9FB1] via-[#F65C88] to-[#DB2E50] text-white rounded-full font-bold shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-100 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={loading || (!isFree && paymentMethod === 'WALLET' && walletBalance < total)}
+                className="w-[calc(100%+20px)] -mx-[10px] py-4 bg-gradient-to-r from-[#FF9FB1] via-[#F65C88] to-[#DB2E50] text-white rounded-full font-bold shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-100 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
               >
                 {loading ? (
                   <Loader2 size={18} className="animate-spin" />
@@ -231,6 +264,11 @@ export const CheckoutPage: React.FC = () => {
                   <>
                     <Sparkles size={16} />
                     <span>Nhận miễn phí</span>
+                  </>
+                ) : paymentMethod === 'WALLET' ? (
+                  <>
+                    <Wallet size={16} />
+                    <span>Thanh toán bằng ví</span>
                   </>
                 ) : (
                   <>

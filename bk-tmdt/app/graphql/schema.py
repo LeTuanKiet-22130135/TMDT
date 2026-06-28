@@ -56,6 +56,8 @@ from app.graphql.types import (
     to_wallet_type,
     RevenueDataPointType,
     CategoryRevenueDataPointType,
+    WalletTransactionType,
+    to_wallet_transaction_type,
 )
 from app.models import Category, User, Order, OrderItem, Report, Product, Store, RoleEnum, OrderStatusEnum, UserFollow, Review, Comment, ProductLike, Wallet
 
@@ -634,6 +636,23 @@ class Query(AnalyticsQuery):
             
         return data
 
+    @strawberry.field
+    def admin_withdrawal_requests(self, info: Info, status: str | None = None) -> list[WalletTransactionType]:
+        from app.models.entities import WalletTransaction, WalletTransactionTypeEnum
+        user = _current_user(info)
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+        
+        db = _db(info)
+        stmt = select(WalletTransaction).where(WalletTransaction.transaction_type == WalletTransactionTypeEnum.WITHDRAWAL)
+        
+        if status:
+            stmt = stmt.where(WalletTransaction.status == status)
+            
+        stmt = stmt.order_by(WalletTransaction.created_at.desc())
+        
+        transactions = db.scalars(stmt).all()
+        return [to_wallet_transaction_type(t) for t in transactions]
 
 from app.graphql.mutations import Mutation
 

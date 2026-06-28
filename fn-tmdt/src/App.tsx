@@ -25,6 +25,7 @@ import TrendingPage from "./pages/Trending/TrendingPage"
 import CollectionPage from "./pages/Collection/CollectionPage"
 import { RevenuePage } from "./pages/Revenue/RevenuePage"
 import WalletPage from "./pages/Wallet/WalletPage"
+import WithdrawalPage from "./pages/Withdrawal/WithdrawalPage"
 
 function CursorGlow() {
   const glowRef = useRef<HTMLDivElement>(null);
@@ -94,6 +95,7 @@ function App() {
           <Route path="/status" element={<StatusPage />} />
           <Route path="/revenue" element={<RevenuePage />} />
           <Route path="/wallet" element={<WalletPage />} />
+          <Route path="/withdrawal" element={<WithdrawalPage />} />
         </Routes>
       </Router>
       </CartProvider>

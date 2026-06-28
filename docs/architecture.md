@@ -53,6 +53,8 @@ src/
     Author/                   # Trang tác giả /author/:shortlink
     CreateProduct/            # Đăng sản phẩm
     Profile/                  # Chỉnh sửa hồ sơ cá nhân
+    Wallet/                   # Giao diện ví, topup VNPay, và gửi yêu cầu rút tiền
+    Withdrawal/               # Lịch sử và thao tác rút tiền nội bộ
     ProductDetailPage.tsx
     CustomRequestsPage.tsx
 ```
@@ -91,6 +93,7 @@ src/
     Orders/                   # Quản lý đơn hàng
     Stores/                   # Quản lý cửa hàng (khóa/mở)
     Reports/                  # Xử lý báo cáo vi phạm
+    Wallet/                   # Dashboard quản lý yêu cầu rút tiền của user (Duyệt/Từ chối)
   services/graphql/           # GraphQL queries & mutations cho admin
 ```
 
@@ -132,7 +135,7 @@ uploads/                      # File storage (ảnh sản phẩm, avatar)
 | `Cart`, `CartItem` | |
 | `Review`, `Comment` | Đánh giá (chỉ khi đã mua), Bình luận (hỏi đáp tự do) |
 | `Report` | Báo cáo vi phạm |
-| `Wallet`, `WalletTransaction` | Ví nội bộ của user và lịch sử giao dịch nạp/trừ tiền |
+| `Wallet`, `WalletTransaction` | Ví điện tử của user (chứa số dư) và lịch sử giao dịch (nạp tiền/thanh toán/rút tiền) |
 | `PaymentLog` | Ghi chú API raw request/response của VNPay |
 
 **Shortlink system:**

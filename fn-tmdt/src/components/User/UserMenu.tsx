@@ -87,6 +87,10 @@ export const UserMenu: React.FC = () => {
               <Wallet size={18} className="mr-3 text-gray-400" />
               <span className="font-medium text-sm">My Wallet</span>
             </Link>
+            <Link to="/withdrawal" onClick={() => setIsOpen(false)} className="flex items-center px-6 py-3 hover:bg-gray-50 transition-colors text-gray-700">
+              <Wallet size={18} className="mr-3 text-gray-400" />
+              <span className="font-medium text-sm">Rút tiền</span>
+            </Link>
             <Link to="/settings" onClick={() => setIsOpen(false)} className="flex items-center px-6 py-3 hover:bg-gray-50 transition-colors text-gray-700">
               <Settings size={18} className="mr-3 text-gray-400" />
               <span className="font-medium text-sm">{t('user.menu.settings')}</span>

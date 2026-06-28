@@ -20,7 +20,7 @@ const navItems = [
   { to: "/orders", icon: ShoppingCart, label: "Giao Dịch" },
   { to: "/stores", icon: Store, label: "Cửa hàng" },
   { to: "/reports", icon: Flag, label: "Báo cáo vi phạm" },
-  { to: "/wallet", icon: Wallet, label: "Ví của tôi" },
+  { to: "/wallet", icon: Wallet, label: "Yêu cầu rút tiền" },
 ];
 
 
