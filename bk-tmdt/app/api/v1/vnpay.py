@@ -14,6 +14,7 @@ from app.api.dependencies import get_current_user, get_db
 from app.core.config import settings
 from app.crud.orders import get_order
 from app.crud.payments import create_payment, get_payment_by_order_id
+from app.crud.wallets import payout_to_store_owner
 from app.models import Order, OrderStatusEnum, PaymentMethodEnum, PaymentStatusEnum, User
 from app.schemas.vnpay import VNPayCreateResponse, VNPayIPNResponse, VNPayReturnResponse, VNPaySimulateResponse
 from app.services.vnpay import create_payment_url, verify_return_params
@@ -125,6 +126,7 @@ def vnpay_return(
         if order.status == OrderStatusEnum.PENDING:
             order.status = OrderStatusEnum.PAID
             db.add(order)
+            payout_to_store_owner(db, order)
         db.commit()
 
         return VNPayReturnResponse(
@@ -192,7 +194,9 @@ def vnpay_ipn(
     if result["response_code"] == "00":
         payment.status = PaymentStatusEnum.PAID
         payment.transaction_id = result.get("vnpay_transaction_no") or str(order_id)
-        order.status = OrderStatusEnum.PAID
+        if order.status == OrderStatusEnum.PENDING:
+            order.status = OrderStatusEnum.PAID
+            payout_to_store_owner(db, order)
     else:
         payment.status = PaymentStatusEnum.FAILED
 
@@ -241,7 +245,9 @@ def vnpay_simulate_ipn(
     # Simulate successful IPN
     payment.status = PaymentStatusEnum.PAID
     payment.transaction_id = payment.transaction_id or str(order_id)
-    order.status = OrderStatusEnum.PAID
+    if order.status == OrderStatusEnum.PENDING:
+        order.status = OrderStatusEnum.PAID
+        payout_to_store_owner(db, order)
 
     db.add(payment)
     db.add(order)

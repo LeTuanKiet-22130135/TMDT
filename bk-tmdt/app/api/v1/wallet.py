@@ -79,7 +79,7 @@ def topup_wallet(
         amount=int(payload.amount),
         order_info=f"Nap tien vao vi: {transaction.id}",
         ip_addr=client_ip,
-        return_url=f"{settings.api_v1_prefix}/wallet/vnpay-return",  # hoặc frontend url
+        return_url=payload.return_url or f"{settings.api_v1_prefix}/wallet/vnpay-return",
     )
 
     return {"payment_url": payment_url}
@@ -114,8 +114,21 @@ def vnpay_return(request: Request, db: Session = Depends(get_db)) -> Any:
     if not transaction:
         return {"success": False, "message": "Không tìm thấy giao dịch", "response_code": result["response_code"]}
 
-    # IPN sẽ xử lý việc cộng tiền, ở đây chỉ trả về kết quả hiển thị cho user
+    # Cập nhật số dư nếu chưa được xử lý bởi IPN
     if result["response_code"] == "00":
+        if transaction.status == WalletTransactionStatusEnum.PENDING:
+            wallet = db.get(Wallet, transaction.wallet_id)
+            if wallet and wallet.status == WalletStatusEnum.ACTIVE:
+                balance_before = wallet.balance
+                wallet.balance += transaction.amount
+                transaction.status = WalletTransactionStatusEnum.SUCCESS
+                transaction.balance_before = balance_before
+                transaction.balance_after = wallet.balance
+                transaction.gateway_transaction_id = result.get("vnpay_transaction_no")
+                db.add(wallet)
+                db.add(transaction)
+                db.commit()
+
         return {
             "success": True,
             "message": "Nạp tiền thành công",
@@ -123,6 +136,11 @@ def vnpay_return(request: Request, db: Session = Depends(get_db)) -> Any:
             "response_code": "00"
         }
     else:
+        if transaction.status == WalletTransactionStatusEnum.PENDING:
+            transaction.status = WalletTransactionStatusEnum.FAILED
+            db.add(transaction)
+            db.commit()
+            
         return {
             "success": False,
             "message": f"Nạp tiền thất bại (mã lỗi: {result['response_code']})",

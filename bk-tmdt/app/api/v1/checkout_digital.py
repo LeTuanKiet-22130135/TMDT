@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from app.api.dependencies import get_current_user, get_db
 from app.crud.orders import create_order, create_order_item
 from app.crud.payments import create_payment
+from app.crud.wallets import payout_to_store_owner
 from app.models import (
     Order, OrderStatusEnum,
     Payment, PaymentMethodEnum, PaymentStatusEnum,
@@ -144,6 +145,9 @@ def checkout_digital(
             transaction_id=session_id,
         )
 
+        if order_status == OrderStatusEnum.PAID:
+            payout_to_store_owner(db, order)
+
         order_ids.append(str(order.id))
 
     db.commit()
@@ -209,6 +213,7 @@ def verify_payment(
             if order.status == OrderStatusEnum.PENDING:
                 order.status = OrderStatusEnum.PAID
                 db.add(order)
+                payout_to_store_owner(db, order)
         else:
             if payment.status == PaymentStatusEnum.UNPAID:
                 payment.status = PaymentStatusEnum.FAILED

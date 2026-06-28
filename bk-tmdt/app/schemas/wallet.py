@@ -10,6 +10,7 @@ from app.models.entities import WalletStatusEnum, WalletTransactionStatusEnum, W
 
 class WalletTopupRequest(BaseModel):
     amount: Decimal = Field(..., ge=50000, description="Số tiền nạp tối thiểu là 50,000 VND")
+    return_url: Optional[str] = None
 
 
 class WalletTopupResponse(BaseModel):
