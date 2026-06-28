@@ -77,6 +77,28 @@ def checkout(payload: CheckoutRequest, db: Session = Depends(get_db), current_us
     discount_amount = points_to_discount(requested_points)
     final_amount = to_decimal(total_amount - discount_amount)
 
+    from app.models.entities import Wallet, WalletTransaction, WalletTransactionTypeEnum, WalletTransactionStatusEnum
+
+    if payload.payment_method == PaymentMethodEnum.WALLET and final_amount > 0:
+        wallet = db.query(Wallet).filter(Wallet.user_id == current_user.id).with_for_update().first()
+        if not wallet or wallet.status.value == "LOCKED":
+            raise HTTPException(status_code=400, detail="Ví không hợp lệ hoặc bị khóa")
+        if wallet.balance < final_amount:
+            raise HTTPException(status_code=400, detail="Số dư ví không đủ")
+            
+        balance_before = wallet.balance
+        wallet.balance -= final_amount
+        wallet_txn = WalletTransaction(
+            wallet_id=wallet.id,
+            transaction_type=WalletTransactionTypeEnum.PAYMENT,
+            amount=final_amount,
+            balance_before=balance_before,
+            balance_after=wallet.balance,
+            status=WalletTransactionStatusEnum.SUCCESS,
+            reference_id=str(uuid4())
+        )
+        db.add(wallet_txn)
+
     orders: list[Order] = []
     payment_transaction_ids: list[str] = []
     total_discount_applied = Decimal("0.00")
@@ -96,6 +118,8 @@ def checkout(payload: CheckoutRequest, db: Session = Depends(get_db), current_us
 
         order_discount = to_decimal(points_to_discount(order_points))
         total_discount_applied += order_discount
+        
+        order_status = OrderStatusEnum.PAID if payload.payment_method == PaymentMethodEnum.WALLET else OrderStatusEnum.PENDING
 
         order = create_order(
             db,
@@ -105,7 +129,7 @@ def checkout(payload: CheckoutRequest, db: Session = Depends(get_db), current_us
             points_used=order_points,
             discount_amount=to_decimal(order_discount),
             final_amount=to_decimal(store_subtotal - order_discount),
-            status=OrderStatusEnum.PENDING,
+            status=order_status,
             shipping_address=payload.shipping_address,
         )
         orders.append(order)
@@ -122,11 +146,13 @@ def checkout(payload: CheckoutRequest, db: Session = Depends(get_db), current_us
             product.sold_quantity += cart_item.quantity
 
         transaction_id = str(uuid4()) if payload.payment_method != PaymentMethodEnum.COD else None
+        payment_status = PaymentStatusEnum.PAID if payload.payment_method == PaymentMethodEnum.WALLET else PaymentStatusEnum.UNPAID
+        
         payment = create_payment(
             db,
             order_id=order.id,
             method=payload.payment_method,
-            status=PaymentStatusEnum.UNPAID,
+            status=payment_status,
             transaction_id=transaction_id,
         )
         db.add(payment)

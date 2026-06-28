@@ -43,6 +43,7 @@ from app.graphql.types import (
     CommentType,
     ReviewConnection,
     CommentConnection,
+    WalletType,
     to_author_type,
     to_category_type,
     to_product_type,
@@ -52,10 +53,11 @@ from app.graphql.types import (
     to_report_type,
     to_review_type,
     to_comment_type,
+    to_wallet_type,
     RevenueDataPointType,
     CategoryRevenueDataPointType,
 )
-from app.models import Category, User, Order, OrderItem, Report, Product, Store, RoleEnum, OrderStatusEnum, UserFollow, Review, Comment, ProductLike
+from app.models import Category, User, Order, OrderItem, Report, Product, Store, RoleEnum, OrderStatusEnum, UserFollow, Review, Comment, ProductLike, Wallet
 
 
 
@@ -87,6 +89,23 @@ class Query(AnalyticsQuery):
         if user is None:
             return None
         return to_user_type(user)
+
+    @strawberry.field
+    def my_wallet(self, info: Info) -> WalletType | None:
+        user = _current_user(info)
+        if user is None:
+            return None
+        db = _db(info)
+        wallet = db.scalar(select(Wallet).where(Wallet.user_id == user.id))
+        if wallet is None:
+            # Tạo ví mới nếu chưa có
+            from decimal import Decimal
+            from app.models.entities import WalletStatusEnum
+            wallet = Wallet(user_id=user.id, balance=Decimal("0.00"), status=WalletStatusEnum.ACTIVE)
+            db.add(wallet)
+            db.commit()
+            db.refresh(wallet)
+        return to_wallet_type(wallet)
 
     @strawberry.field
     def my_purchased_products(self, info: Info) -> list[ProductType]:

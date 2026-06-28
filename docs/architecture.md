@@ -132,6 +132,8 @@ uploads/                      # File storage (ảnh sản phẩm, avatar)
 | `Cart`, `CartItem` | |
 | `Review`, `Comment` | Đánh giá (chỉ khi đã mua), Bình luận (hỏi đáp tự do) |
 | `Report` | Báo cáo vi phạm |
+| `Wallet`, `WalletTransaction` | Ví nội bộ của user và lịch sử giao dịch nạp/trừ tiền |
+| `PaymentLog` | Ghi chú API raw request/response của VNPay |
 
 **Shortlink system:**
 - Mỗi user có `shortlink` duy nhất (10 ký tự alphanumeric random)

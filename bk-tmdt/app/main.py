@@ -22,6 +22,7 @@ from app.api.v1.stores import router as stores_router
 from app.api.v1.uploads import router as uploads_router
 from app.api.v1.internal import router as internal_router
 from app.api.v1.vnpay import router as vnpay_router
+from app.api.v1.wallet import router as wallet_router
 from app.api.v1.checkout_digital import router as checkout_digital_router
 from app.graphql import graphql_router
 from app.agent import agent_graphql_router
@@ -52,6 +53,7 @@ app.include_router(products_router, prefix=f"{settings.api_v1_prefix}/products",
 app.include_router(uploads_router, prefix=f"{settings.api_v1_prefix}/uploads", tags=["uploads"])
 app.include_router(internal_router, prefix=f"{settings.api_v1_prefix}/internal", tags=["internal"])
 app.include_router(vnpay_router, prefix=f"{settings.api_v1_prefix}/vnpay", tags=["vnpay"])
+app.include_router(wallet_router, prefix=f"{settings.api_v1_prefix}/wallet", tags=["wallet"])
 app.include_router(checkout_digital_router, prefix=f"{settings.api_v1_prefix}/checkout-digital", tags=["checkout-digital"])
 app.include_router(graphql_router, prefix="/graphql", tags=["graphql"])
 app.include_router(agent_graphql_router, prefix="/agent/graphql", tags=["agent"])
