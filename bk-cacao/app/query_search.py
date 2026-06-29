@@ -51,6 +51,26 @@ def _log_keyword_products(label: str, rows: list):
         _slog(f"           tags ({len(all_tags)}): {all_tags[:15]}{' ...' if len(all_tags) > 15 else ''}")
 
 
+def _apply_hard_filters(rows: list, params: ProductSearchQuery) -> list:
+    """Post-filter hybrid results by price, software_tags, format_tags."""
+    result = []
+    for p, u, score in rows:
+        if params.min_price is not None and p.price < params.min_price:
+            continue
+        if params.max_price is not None and p.price > params.max_price:
+            continue
+        if params.software_tags:
+            p_sw = list(p.software_tags or [])
+            if not any(t in p_sw for t in params.software_tags):
+                continue
+        if params.format_tags:
+            p_fmt = list(p.format_tags or [])
+            if not any(t in p_fmt for t in params.format_tags):
+                continue
+        result.append((p, u, score))
+    return result
+
+
 def _run_keyword_query(params: ProductSearchQuery, db):
     q = (
         db.query(Product, Store, User)
@@ -102,8 +122,9 @@ def search_products_by_ai(prompt: str) -> AiSearchResult:
             high_confidence=params_vi.high_confidence,
             primary_tags=params_vi.primary_tags or None,
         )
+    hybrid_rows = _apply_hard_filters(hybrid_rows, params_vi)
     if hybrid_rows:
-        print(f"[Shiro/step1-hybrid] ✓ {len(hybrid_rows)} results")
+        print(f"[Shiro/step1-hybrid] ✓ {len(hybrid_rows)} results (after price/tag filter)")
         _slog(f"  → HIT ✓  (scoring detail → shiro_scoring.log)")
         _log_hybrid_products("Returned", hybrid_rows)
         _slog(f"\n[RESULT] step=hybrid  via=step1  count={len(hybrid_rows)}")
@@ -126,8 +147,9 @@ def search_products_by_ai(prompt: str) -> AiSearchResult:
             high_confidence=False,
             primary_tags=params_vi.primary_tags or None,
         )
+    relaxed_rows = _apply_hard_filters(relaxed_rows, params_vi)
     if relaxed_rows:
-        print(f"[Shiro/step1.5-relaxed-hybrid] ✓ {len(relaxed_rows)} results")
+        print(f"[Shiro/step1.5-relaxed-hybrid] ✓ {len(relaxed_rows)} results (after price/tag filter)")
         _slog(f"  → HIT ✓  (scoring detail → shiro_scoring.log)")
         _log_hybrid_products("Returned", relaxed_rows)
         _slog(f"\n[RESULT] step=hybrid  via=step1.5  count={len(relaxed_rows)}")
@@ -152,8 +174,9 @@ def search_products_by_ai(prompt: str) -> AiSearchResult:
             high_confidence=False,
             primary_tags=params_vi.primary_tags or None,
         )
+    hybrid_en_rows = _apply_hard_filters(hybrid_en_rows, params_vi)
     if hybrid_en_rows:
-        print(f"[Shiro/step2-hybrid-en] ✓ {len(hybrid_en_rows)} results")
+        print(f"[Shiro/step2-hybrid-en] ✓ {len(hybrid_en_rows)} results (after price/tag filter)")
         _slog(f"  → HIT ✓  (scoring detail → shiro_scoring.log)")
         _log_hybrid_products("Returned", hybrid_en_rows)
         _slog(f"\n[RESULT] step=hybrid  via=step2-EN  count={len(hybrid_en_rows)}")
