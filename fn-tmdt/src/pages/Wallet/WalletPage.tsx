@@ -1,4 +1,4 @@
-import { Header } from '../../components/Layout/Header';
+import { Header } from '../../components/layout/Header';
 import { useWalletLogic } from './WalletPage.logic';
 import { Wallet, ArrowUpRight, ArrowDownLeft, Clock, AlertCircle } from 'lucide-react';
 

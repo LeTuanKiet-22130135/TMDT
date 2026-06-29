@@ -58,6 +58,10 @@ from app.graphql.types import (
     CategoryRevenueDataPointType,
     WalletTransactionType,
     to_wallet_transaction_type,
+    AdminWalletTransactionType,
+    AdminWalletTransactionConnection,
+    AdminWalletStatsType,
+    to_admin_wallet_transaction_type,
 )
 from app.models import Category, User, Order, OrderItem, Report, Product, Store, RoleEnum, OrderStatusEnum, UserFollow, Review, Comment, ProductLike, Wallet
 
@@ -635,6 +639,83 @@ class Query(AnalyticsQuery):
             ))
             
         return data
+
+    @strawberry.field
+    def admin_wallet_stats(self, info: Info) -> AdminWalletStatsType:
+        from app.models.entities import WalletTransaction, WalletTransactionTypeEnum, WalletTransactionStatusEnum
+        user = _current_user(info)
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+
+        db = _db(info)
+
+        def sum_type(txn_type: WalletTransactionTypeEnum) -> float:
+            result = db.scalar(
+                select(func.sum(WalletTransaction.amount))
+                .where(WalletTransaction.transaction_type == txn_type)
+                .where(WalletTransaction.status == WalletTransactionStatusEnum.SUCCESS)
+            )
+            return float(result or 0)
+
+        total_topup = sum_type(WalletTransactionTypeEnum.TOPUP)
+        total_payment = sum_type(WalletTransactionTypeEnum.PAYMENT)
+        total_refund = sum_type(WalletTransactionTypeEnum.REFUND)
+        total_withdrawal = sum_type(WalletTransactionTypeEnum.WITHDRAWAL)
+
+        return AdminWalletStatsType(
+            total_topup=total_topup,
+            total_payment=total_payment,
+            total_refund=total_refund,
+            total_withdrawal=total_withdrawal,
+            total_inflow=total_topup + total_refund,
+            total_outflow=total_payment + total_withdrawal,
+            total_turnover=total_topup + total_payment + total_refund + total_withdrawal,
+        )
+
+    @strawberry.field
+    def admin_all_wallet_transactions(
+        self,
+        info: Info,
+        transaction_type: str | None = None,
+        status: str | None = None,
+        page: int = 1,
+        limit: int = 20,
+    ) -> AdminWalletTransactionConnection:
+        from app.models.entities import WalletTransaction as WalletTxn
+        user = _current_user(info)
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+
+        db = _db(info)
+        stmt = (
+            select(WalletTxn, Wallet, User)
+            .join(Wallet, WalletTxn.wallet_id == Wallet.id)
+            .join(User, Wallet.user_id == User.id)
+        )
+
+        if transaction_type:
+            stmt = stmt.where(WalletTxn.transaction_type == transaction_type)
+        if status:
+            stmt = stmt.where(WalletTxn.status == status)
+
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total_items = db.scalar(count_stmt) or 0
+
+        safe_limit = min(max(limit, 1), 100)
+        safe_page = max(page, 1)
+        stmt = stmt.order_by(WalletTxn.created_at.desc()).offset((safe_page - 1) * safe_limit).limit(safe_limit)
+
+        rows = db.execute(stmt).all()
+        items = [
+            to_admin_wallet_transaction_type(txn, user_email=u.email, user_id=str(u.id))
+            for txn, _wallet, u in rows
+        ]
+
+        return AdminWalletTransactionConnection(
+            items=items,
+            total_items=total_items,
+            total_pages=ceil(total_items / safe_limit) if total_items else 0,
+        )
 
     @strawberry.field
     def admin_withdrawal_requests(self, info: Info, status: str | None = None) -> list[WalletTransactionType]:

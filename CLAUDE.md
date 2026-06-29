@@ -99,3 +99,9 @@ Auto-detected next prompt. No registration needed.
 - Update `docs/architecture.md` when adding services/models/structure.
 - New services need `Dockerfile`.
 - **Never commit to Gitea. Never touch Gitea workflows.**
+
+## CRITICAL ARCHITECTURE RULES:
+1. DO NOT group all logic into one giant file ("God file").
+2. Enforce structural modularity: Split the implementation into separate files/modules based on functional layers (e.g., core logic, UI layout, data/types).
+3. Keep each file lightweight and highly focused (under 150-200 lines if possible).
+4. When creating or refactoring code, explicitly output the folder structure and state which code goes into which file clearly.

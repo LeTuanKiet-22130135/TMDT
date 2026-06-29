@@ -40,6 +40,42 @@ export const ADMIN_WITHDRAWALS_QUERY = gql`
   }
 `;
 
+export const ADMIN_WALLET_STATS_QUERY = gql`
+  query AdminWalletStats {
+    adminWalletStats {
+      totalTopup
+      totalPayment
+      totalRefund
+      totalWithdrawal
+      totalInflow
+      totalOutflow
+      totalTurnover
+    }
+  }
+`;
+
+export const ADMIN_ALL_WALLET_TRANSACTIONS_QUERY = gql`
+  query AdminAllWalletTransactions($transactionType: String, $status: String, $page: Int, $limit: Int) {
+    adminAllWalletTransactions(transactionType: $transactionType, status: $status, page: $page, limit: $limit) {
+      items {
+        id
+        walletId
+        transactionType
+        amount
+        balanceBefore
+        balanceAfter
+        status
+        referenceId
+        createdAt
+        userEmail
+        userId
+      }
+      totalItems
+      totalPages
+    }
+  }
+`;
+
 export const APPROVE_WITHDRAWAL_MUTATION = gql`
   mutation ApproveWithdrawal($transactionId: UUID!) {
     approveWithdrawal(transactionId: $transactionId) {
