@@ -2,10 +2,11 @@ import { useQuery } from '@apollo/client/react';
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { MY_WALLET_QUERY } from '../../graphql/wallet';
+import type { MyWalletData } from '../../graphql/wallet';
 import { WalletService } from '../../services/api/wallet.service';
 
 export function useWalletLogic() {
-  const { data, loading, error, refetch } = useQuery(MY_WALLET_QUERY);
+  const { data, loading, error, refetch } = useQuery<MyWalletData>(MY_WALLET_QUERY);
   const [topupAmount, setTopupAmount] = useState<number>(0);
   const [isToppingUp, setIsToppingUp] = useState(false);
   const [searchParams] = useSearchParams();

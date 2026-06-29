@@ -7,6 +7,7 @@ import { formatPrice } from '../../components/Cart/cart.logic';
 import { resolveMediaUrl } from '../../lib/media';
 import { Header } from '../../components/layout/Header';
 import { MY_WALLET_QUERY } from '../../graphql/wallet';
+import type { MyWalletData } from '../../graphql/wallet';
 
 const API = import.meta.env.VITE_API_URL || '';
 
@@ -29,7 +30,7 @@ export const CheckoutPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'VNPAY' | 'WALLET'>('VNPAY');
 
-  const { data: walletData } = useQuery(MY_WALLET_QUERY);
+  const { data: walletData } = useQuery<MyWalletData>(MY_WALLET_QUERY);
   const walletBalance = walletData?.myWallet?.balance ?? 0;
 
   const grouped = groupByStore(items);

@@ -149,7 +149,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
             <FacebookLogin
               appId={import.meta.env.VITE_FACEBOOK_CLIENT_ID || ''}
               onSuccess={handleFacebookSuccess}
-              render={({ onClick }) => (
+              render={({ onClick }: { onClick?: () => void }) => (
                 <button
                   type="button"
                   onClick={onClick}

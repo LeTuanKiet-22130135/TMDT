@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { MY_WALLET_QUERY, REQUEST_WITHDRAWAL_MUTATION } from '../../graphql/wallet';
+import type { MyWalletData } from '../../graphql/wallet';
 import { useNavigate } from 'react-router-dom';
 
 export const VIETNAM_BANKS = [
@@ -24,7 +25,7 @@ export const VIETNAM_BANKS = [
 export const MIN_WITHDRAWAL = 50000;
 
 export function useWithdrawalLogic() {
-  const { data, loading, refetch } = useQuery(MY_WALLET_QUERY);
+  const { data, loading, refetch } = useQuery<MyWalletData>(MY_WALLET_QUERY);
   const [requestWithdrawal, { loading: withdrawing }] = useMutation(REQUEST_WITHDRAWAL_MUTATION);
   const navigate = useNavigate();
 
