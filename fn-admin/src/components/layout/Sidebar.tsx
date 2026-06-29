@@ -8,6 +8,7 @@ import {
   LogOut,
   ShieldCheck,
   Flag,
+  Wallet,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ const navItems = [
   { to: "/orders", icon: ShoppingCart, label: "Giao Dịch" },
   { to: "/stores", icon: Store, label: "Cửa hàng" },
   { to: "/reports", icon: Flag, label: "Báo cáo vi phạm" },
+  { to: "/wallet", icon: Wallet, label: "Yêu cầu rút tiền" },
 ];
 
 

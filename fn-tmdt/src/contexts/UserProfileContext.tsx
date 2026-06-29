@@ -21,6 +21,7 @@ export interface UserProfile {
   };
   isVerified: boolean;
   rewardPoints: number;
+  role: string;
 }
 
 interface UserProfileContextValue {
@@ -56,6 +57,7 @@ const DEFAULT_PROFILE: UserProfile = {
   socialLinks: { website: '', twitter: '', instagram: '' },
   isVerified: false,
   rewardPoints: 0,
+  role: 'BUYER',
 };
 
 function meDataToProfile(me: Record<string, unknown>): UserProfile {
@@ -81,6 +83,7 @@ function meDataToProfile(me: Record<string, unknown>): UserProfile {
     },
     isVerified: Boolean(me.isVerified),
     rewardPoints: Number(me.rewardPoints ?? 0),
+    role: String(me.role ?? 'BUYER'),
   };
 }
 

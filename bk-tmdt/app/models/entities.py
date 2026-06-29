@@ -40,6 +40,7 @@ class PaymentMethodEnum(str, Enum):
     CREDIT_CARD = "CREDIT_CARD"
     PAYPAL = "PAYPAL"
     VNPAY = "VNPAY"
+    WALLET = "WALLET"
 
 
 class PaymentStatusEnum(str, Enum):
@@ -60,6 +61,25 @@ class ReportStatusEnum(str, Enum):
     REVIEWED = "REVIEWED"
     RESOLVED = "RESOLVED"
     DISMISSED = "DISMISSED"
+
+
+class WalletStatusEnum(str, Enum):
+    ACTIVE = "ACTIVE"
+    LOCKED = "LOCKED"
+
+
+class WalletTransactionTypeEnum(str, Enum):
+    TOPUP = "TOPUP"
+    PAYMENT = "PAYMENT"
+    REFUND = "REFUND"
+    WITHDRAWAL = "WITHDRAWAL"
+
+
+class WalletTransactionStatusEnum(str, Enum):
+    PENDING = "PENDING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
 
 
 class TimestampMixin:
@@ -97,8 +117,8 @@ class User(Base, TimestampMixin):
     avatar_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     banner_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     bio: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    specialties: Mapped[list] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=list, server_default=text("'[]'::jsonb"))
-    social_links: Mapped[dict] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=dict, server_default=text("'{}'::jsonb"))
+    specialties: Mapped[list[str]] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), default=list, server_default=text("'[]'"))
+    social_links: Mapped[dict[str, str]] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), default=dict, server_default=text("'{}'"))
     phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     reward_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
@@ -112,6 +132,7 @@ class User(Base, TimestampMixin):
 
     store: Mapped[Optional["Store"]] = relationship(back_populates="owner", uselist=False)
     cart: Mapped[Optional["ShoppingCart"]] = relationship(back_populates="user", uselist=False)
+    wallet: Mapped[Optional["Wallet"]] = relationship(back_populates="user", uselist=False)
     orders: Mapped[list["Order"]] = relationship(back_populates="user")
     reviews: Mapped[list["Review"]] = relationship(back_populates="user")
     comments: Mapped[list["Comment"]] = relationship(back_populates="user")
@@ -175,10 +196,10 @@ class Product(Base, TimestampMixin):
     image_urls: Mapped[list[str]] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=list)
     main_file_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     license_type: Mapped[str] = mapped_column(String(50), nullable=False, default="personal", server_default=text("'personal'"))
-    user_tags: Mapped[list] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=list, server_default=text("'[]'::jsonb"))
-    ai_tags: Mapped[list] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=list, server_default=text("'[]'::jsonb"))
-    software_tags: Mapped[list] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=list, server_default=text("'[]'::jsonb"))
-    format_tags: Mapped[list] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=list, server_default=text("'[]'::jsonb"))
+    user_tags: Mapped[list[str]] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=list, server_default=text("'[]'"))
+    ai_tags: Mapped[list[str]] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=list, server_default=text("'[]'"))
+    software_tags: Mapped[list[str]] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=list, server_default=text("'[]'"))
+    format_tags: Mapped[list[str]] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=list, server_default=text("'[]'"))
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=text("true"))
 
     store: Mapped[Store] = relationship(back_populates="products")
@@ -333,3 +354,42 @@ class Report(Base, CreatedAtMixin):
     reporter: Mapped[User] = relationship(back_populates="reports_made", foreign_keys=[reporter_id])
     reported_store: Mapped[Optional[Store]] = relationship(back_populates="reports", foreign_keys=[reported_store_id])
     reported_user: Mapped[Optional[User]] = relationship(back_populates="reports_against_user", foreign_keys=[reported_user_id])
+
+
+class Wallet(Base, TimestampMixin):
+    __tablename__ = "wallets"
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    balance: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, default=Decimal("0.00"), server_default=text("0.00"))
+    status: Mapped[WalletStatusEnum] = mapped_column(pg_enum(WalletStatusEnum, "wallet_status_enum"), nullable=False, default=WalletStatusEnum.ACTIVE)
+
+    user: Mapped[User] = relationship(back_populates="wallet")
+    transactions: Mapped[list["WalletTransaction"]] = relationship(back_populates="wallet", cascade="all, delete-orphan")
+
+
+class WalletTransaction(Base, TimestampMixin):
+    __tablename__ = "wallet_transactions"
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    wallet_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("wallets.id", ondelete="CASCADE"), nullable=False)
+    transaction_type: Mapped[WalletTransactionTypeEnum] = mapped_column(pg_enum(WalletTransactionTypeEnum, "wallet_transaction_type_enum"), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
+    balance_before: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
+    balance_after: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
+    status: Mapped[WalletTransactionStatusEnum] = mapped_column(pg_enum(WalletTransactionStatusEnum, "wallet_transaction_status_enum"), nullable=False, default=WalletTransactionStatusEnum.PENDING)
+    reference_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # order_id or other reference
+    gateway_transaction_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # vnp_TransactionNo
+    gateway_response_code: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)  # vnp_ResponseCode
+
+    wallet: Mapped[Wallet] = relationship(back_populates="transactions")
+
+
+class PaymentLog(Base, CreatedAtMixin):
+    __tablename__ = "payment_logs"
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    wallet_transaction_id: Mapped[Optional[UUID]] = mapped_column(PGUUID(as_uuid=True), ForeignKey("wallet_transactions.id", ondelete="SET NULL"), nullable=True)
+    endpoint: Mapped[str] = mapped_column(String(255), nullable=False)  # e.g., 'vnpay_ipn' or 'vnpay_return'
+    request_payload: Mapped[dict] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=dict)
+    response_payload: Mapped[dict] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=False, default=dict)

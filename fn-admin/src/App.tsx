@@ -9,6 +9,7 @@ import ProductsPage from "@/pages/Products/ProductsPage";
 import OrdersPage from "@/pages/Orders/OrdersPage";
 import StoresPage from "@/pages/Stores/StoresPage";
 import ReportsPage from "@/pages/Reports/ReportsPage";
+import AdminWalletPage from "@/pages/Wallet/AdminWalletPage";
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
               <Route path="/orders" element={<OrdersPage />} />
               <Route path="/stores" element={<StoresPage />} />
               <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/wallet" element={<AdminWalletPage />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -26,12 +26,13 @@ export interface HomeProduct {
 const PAGE_SIZE = 20;
 const MAX_ITEMS = 100;
 
-export const useHomeProducts = () => {
+export const useHomeProducts = (skip: boolean = false) => {
   const [hasMore, setHasMore] = useState(true);
   const [reachedMax, setReachedMax] = useState(false);
 
   const { data, loading, fetchMore, refetch } = useQuery<{ suggestions?: HomeProduct[] }>(SUGGESTIONS_QUERY, {
     client: cacaoClient,
+    skip,
     variables: { offset: 0, limit: PAGE_SIZE },
     fetchPolicy: 'network-only',
     notifyOnNetworkStatusChange: true,

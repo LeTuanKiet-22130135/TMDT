@@ -21,8 +21,13 @@ from app.models.entities import (
     Store,
     User,
     UserFollow,
+    Wallet,
+    WalletTransaction,
+    PaymentLog,
+    WalletStatusEnum,
+    WalletTransactionStatusEnum,
+    WalletTransactionTypeEnum,
 )
-
 __all__ = [
     "AuthProviderEnum",
     "Base",
@@ -46,4 +51,10 @@ __all__ = [
     "Store",
     "User",
     "UserFollow",
+    "Wallet",
+    "WalletTransaction",
+    "PaymentLog",
+    "WalletStatusEnum",
+    "WalletTransactionStatusEnum",
+    "WalletTransactionTypeEnum",
 ]

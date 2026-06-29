@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from app.api.dependencies import get_current_user, get_db
 from app.crud.orders import create_order, create_order_item
 from app.crud.payments import create_payment
+from app.crud.wallets import payout_to_store_owner
 from app.models import (
     Order, OrderStatusEnum,
     Payment, PaymentMethodEnum, PaymentStatusEnum,
@@ -28,10 +29,13 @@ from app.services.vnpay import create_payment_url, verify_return_params
 router = APIRouter()
 
 
+from app.models.entities import Wallet, WalletTransaction, WalletTransactionTypeEnum, WalletTransactionStatusEnum
+
 class DigitalCheckoutRequest(BaseModel):
     product_ids: list[str]
     tips: dict[str, int] = {}   # store_id (str UUID) → tip VND
     return_url: str
+    payment_method: PaymentMethodEnum = PaymentMethodEnum.VNPAY
 
 
 class DigitalCheckoutResponse(BaseModel):
@@ -72,10 +76,44 @@ def checkout_digital(
     order_ids: list[str] = []
     total_vnd = 0
 
+    # Nếu dùng WALLET, tính tổng tiền trước
+    for store_id, store_products in by_store.items():
+        subtotal = sum(int(p.price) for p in store_products)
+        tip = body.tips.get(str(store_id), 0)
+        total_vnd += (subtotal + tip)
+
+    # Khóa và trừ tiền ví nếu chọn WALLET
+    if body.payment_method == PaymentMethodEnum.WALLET and total_vnd > 0:
+        wallet = db.query(Wallet).filter(Wallet.user_id == current_user.id).with_for_update().first()
+        if not wallet or wallet.status.value == "LOCKED":
+            raise HTTPException(status_code=400, detail="Ví không hợp lệ hoặc bị khóa")
+        if wallet.balance < Decimal(str(total_vnd)):
+            raise HTTPException(status_code=400, detail="Số dư ví không đủ")
+            
+        balance_before = wallet.balance
+        wallet.balance -= Decimal(str(total_vnd))
+        
+        # Tạo log giao dịch ví
+        wallet_txn = WalletTransaction(
+            wallet_id=wallet.id,
+            transaction_type=WalletTransactionTypeEnum.PAYMENT,
+            amount=Decimal(str(total_vnd)),
+            balance_before=balance_before,
+            balance_after=wallet.balance,
+            status=WalletTransactionStatusEnum.SUCCESS,
+            reference_id=session_id
+        )
+        db.add(wallet_txn)
+
+    # Tạo Order và Payment cho từng cửa hàng
     for store_id, store_products in by_store.items():
         subtotal = sum(int(p.price) for p in store_products)
         tip = body.tips.get(str(store_id), 0)
         store_total = subtotal + tip
+
+        # Nếu thanh toán bằng ví, đơn hàng sẽ thành công ngay lập tức
+        order_status = OrderStatusEnum.PAID if body.payment_method == PaymentMethodEnum.WALLET else OrderStatusEnum.PENDING
+        payment_status = PaymentStatusEnum.PAID if body.payment_method == PaymentMethodEnum.WALLET else PaymentStatusEnum.UNPAID
 
         order = create_order(
             db,
@@ -85,7 +123,7 @@ def checkout_digital(
             points_used=0,
             discount_amount=Decimal("0"),
             final_amount=Decimal(str(store_total)),
-            status=OrderStatusEnum.PENDING,
+            status=order_status,
             shipping_address="Digital delivery",
         )
         db.flush()
@@ -102,37 +140,29 @@ def checkout_digital(
         create_payment(
             db,
             order_id=order.id,
-            method=PaymentMethodEnum.VNPAY,
-            status=PaymentStatusEnum.UNPAID,
+            method=body.payment_method,
+            status=payment_status,
             transaction_id=session_id,
         )
 
-        order_ids.append(str(order.id))
-        total_vnd += store_total
+        if order_status == OrderStatusEnum.PAID:
+            payout_to_store_owner(db, order)
 
-    # Free checkout — skip VNPay, mark everything PAID immediately
-    if total_vnd == 0:
-        payments_to_mark = list(
-            db.scalars(select(Payment).where(Payment.transaction_id == session_id)).all()
-        )
-        for payment in payments_to_mark:
-            payment.status = PaymentStatusEnum.PAID
-            db.add(payment)
-            order = db.get(Order, payment.order_id)
-            if order:
-                order.status = OrderStatusEnum.PAID
-                db.add(order)
-        db.commit()
-        free_url = f"{body.return_url}?free=1&session_id={session_id}"
-        return DigitalCheckoutResponse(
-            session_id=session_id,
-            order_ids=order_ids,
-            total=0,
-            payment_url=free_url,
-        )
+        order_ids.append(str(order.id))
 
     db.commit()
 
+    # Free checkout hoặc Wallet checkout — trả về thẳng
+    if total_vnd == 0 or body.payment_method == PaymentMethodEnum.WALLET:
+        free_url = f"{body.return_url}?free=1&session_id={session_id}" if total_vnd == 0 else f"{body.return_url}?wallet=1&session_id={session_id}"
+        return DigitalCheckoutResponse(
+            session_id=session_id,
+            order_ids=order_ids,
+            total=total_vnd,
+            payment_url=free_url,
+        )
+
+    # Nếu dùng VNPay, tạo URL thanh toán
     client_ip = request.client.host if request.client else "127.0.0.1"
     payment_url = create_payment_url(
         order_id=session_id,
@@ -183,6 +213,7 @@ def verify_payment(
             if order.status == OrderStatusEnum.PENDING:
                 order.status = OrderStatusEnum.PAID
                 db.add(order)
+                payout_to_store_owner(db, order)
         else:
             if payment.status == PaymentStatusEnum.UNPAID:
                 payment.status = PaymentStatusEnum.FAILED

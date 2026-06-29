@@ -149,6 +149,10 @@ Rules:
 - "photoshop" → software_tags=["photoshop"], "clip studio" → ["clip-studio"], "live2d" → ["live2d-cubism"]
 - ".psd" → format_tags=["psd"], "png" → ["png"]
 - Extract multiple tags if user mentions multiple software/formats
+- PRICE-ONLY rule: if the prompt mentions ONLY price (e.g. "dưới 50k", "miễn phí", "từ 10k đến 50k") with no visual content, style, subject, or use-case → set danbooru_tags=[], primary_tags=[], high_confidence=false. The price filter handles it — no tags needed.
+- SOFTWARE-ONLY rule: if the prompt mentions ONLY a software tool (e.g. "cho photoshop", "clip studio") with no content description → set danbooru_tags=[], primary_tags=[], high_confidence=false. The software_tags filter handles it.
+- FORMAT-ONLY rule: if the prompt mentions ONLY a file format (e.g. "file psd", "định dạng png") with no content description → set danbooru_tags=[], primary_tags=[], high_confidence=false. The format_tags filter handles it.
+- These rules also apply in combination: price + software, price + format, software + format — if there is NO visual/content/style description, leave danbooru_tags=[] and primary_tags=[].
 """
 
 

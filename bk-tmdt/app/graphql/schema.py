@@ -23,6 +23,7 @@ from app.crud.products import (
 )
 from app.crud.stores import get_store, search_stores
 from app.graphql.context import get_graphql_context
+from app.graphql.analytics import AnalyticsQuery
 from decimal import Decimal
 from sqlalchemy import select, func
 from app.graphql.types import (
@@ -42,6 +43,7 @@ from app.graphql.types import (
     CommentType,
     ReviewConnection,
     CommentConnection,
+    WalletType,
     to_author_type,
     to_category_type,
     to_product_type,
@@ -51,10 +53,17 @@ from app.graphql.types import (
     to_report_type,
     to_review_type,
     to_comment_type,
+    to_wallet_type,
     RevenueDataPointType,
     CategoryRevenueDataPointType,
+    WalletTransactionType,
+    to_wallet_transaction_type,
+    AdminWalletTransactionType,
+    AdminWalletTransactionConnection,
+    AdminWalletStatsType,
+    to_admin_wallet_transaction_type,
 )
-from app.models import Category, User, Order, OrderItem, Report, Product, Store, RoleEnum, OrderStatusEnum, UserFollow, Review, Comment, ProductLike
+from app.models import Category, User, Order, OrderItem, Report, Product, Store, RoleEnum, OrderStatusEnum, UserFollow, Review, Comment, ProductLike, Wallet
 
 
 
@@ -75,7 +84,7 @@ def _current_user(info: Info) -> User | None:
 
 
 @strawberry.type
-class Query:
+class Query(AnalyticsQuery):
     @strawberry.field
     def categories(self, info: Info) -> list[CategoryType]:
         return [to_category_type(c) for c in _db(info).scalars(select(Category)).all()]
@@ -86,6 +95,23 @@ class Query:
         if user is None:
             return None
         return to_user_type(user)
+
+    @strawberry.field
+    def my_wallet(self, info: Info) -> WalletType | None:
+        user = _current_user(info)
+        if user is None:
+            return None
+        db = _db(info)
+        wallet = db.scalar(select(Wallet).where(Wallet.user_id == user.id))
+        if wallet is None:
+            # Tạo ví mới nếu chưa có
+            from decimal import Decimal
+            from app.models.entities import WalletStatusEnum
+            wallet = Wallet(user_id=user.id, balance=Decimal("0.00"), status=WalletStatusEnum.ACTIVE)
+            db.add(wallet)
+            db.commit()
+            db.refresh(wallet)
+        return to_wallet_type(wallet)
 
     @strawberry.field
     def my_purchased_products(self, info: Info) -> list[ProductType]:
@@ -614,6 +640,100 @@ class Query:
             
         return data
 
+    @strawberry.field
+    def admin_wallet_stats(self, info: Info) -> AdminWalletStatsType:
+        from app.models.entities import WalletTransaction, WalletTransactionTypeEnum, WalletTransactionStatusEnum
+        user = _current_user(info)
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+
+        db = _db(info)
+
+        def sum_type(txn_type: WalletTransactionTypeEnum) -> float:
+            result = db.scalar(
+                select(func.sum(WalletTransaction.amount))
+                .where(WalletTransaction.transaction_type == txn_type)
+                .where(WalletTransaction.status == WalletTransactionStatusEnum.SUCCESS)
+            )
+            return float(result or 0)
+
+        total_topup = sum_type(WalletTransactionTypeEnum.TOPUP)
+        total_payment = sum_type(WalletTransactionTypeEnum.PAYMENT)
+        total_refund = sum_type(WalletTransactionTypeEnum.REFUND)
+        total_withdrawal = sum_type(WalletTransactionTypeEnum.WITHDRAWAL)
+
+        return AdminWalletStatsType(
+            total_topup=total_topup,
+            total_payment=total_payment,
+            total_refund=total_refund,
+            total_withdrawal=total_withdrawal,
+            total_inflow=total_topup + total_refund,
+            total_outflow=total_payment + total_withdrawal,
+            total_turnover=total_topup + total_payment + total_refund + total_withdrawal,
+        )
+
+    @strawberry.field
+    def admin_all_wallet_transactions(
+        self,
+        info: Info,
+        transaction_type: str | None = None,
+        status: str | None = None,
+        page: int = 1,
+        limit: int = 20,
+    ) -> AdminWalletTransactionConnection:
+        from app.models.entities import WalletTransaction as WalletTxn
+        user = _current_user(info)
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+
+        db = _db(info)
+        stmt = (
+            select(WalletTxn, Wallet, User)
+            .join(Wallet, WalletTxn.wallet_id == Wallet.id)
+            .join(User, Wallet.user_id == User.id)
+        )
+
+        if transaction_type:
+            stmt = stmt.where(WalletTxn.transaction_type == transaction_type)
+        if status:
+            stmt = stmt.where(WalletTxn.status == status)
+
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total_items = db.scalar(count_stmt) or 0
+
+        safe_limit = min(max(limit, 1), 100)
+        safe_page = max(page, 1)
+        stmt = stmt.order_by(WalletTxn.created_at.desc()).offset((safe_page - 1) * safe_limit).limit(safe_limit)
+
+        rows = db.execute(stmt).all()
+        items = [
+            to_admin_wallet_transaction_type(txn, user_email=u.email, user_id=str(u.id))
+            for txn, _wallet, u in rows
+        ]
+
+        return AdminWalletTransactionConnection(
+            items=items,
+            total_items=total_items,
+            total_pages=ceil(total_items / safe_limit) if total_items else 0,
+        )
+
+    @strawberry.field
+    def admin_withdrawal_requests(self, info: Info, status: str | None = None) -> list[WalletTransactionType]:
+        from app.models.entities import WalletTransaction, WalletTransactionTypeEnum
+        user = _current_user(info)
+        if user is None or user.role != RoleEnum.ADMIN:
+            raise Exception("Not authorized")
+        
+        db = _db(info)
+        stmt = select(WalletTransaction).where(WalletTransaction.transaction_type == WalletTransactionTypeEnum.WITHDRAWAL)
+        
+        if status:
+            stmt = stmt.where(WalletTransaction.status == status)
+            
+        stmt = stmt.order_by(WalletTransaction.created_at.desc())
+        
+        transactions = db.scalars(stmt).all()
+        return [to_wallet_transaction_type(t) for t in transactions]
 
 from app.graphql.mutations import Mutation
 

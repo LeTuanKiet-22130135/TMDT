@@ -6,10 +6,8 @@ import AuthLayout from '../../components/Auth/AuthLayout';
 import Input from '../../components/Auth/Input';
 import Button from '../../components/Auth/Button';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import _FacebookLogin from 'react-facebook-login/dist/facebook-login-render-props';
-
-const FacebookLogin = (_FacebookLogin as any).default || _FacebookLogin;
-
+import _FB from '@greatsumini/react-facebook-login';
+const FacebookLogin = (_FB as any).default ?? _FB;
 import { useTranslation } from 'react-i18next';
 import { useUserProfile } from '../../contexts/UserProfileContext';
 
@@ -32,7 +30,9 @@ const LoginPage: React.FC = () => {
       notifyLogin();
       navigate('/');
     } catch (error: any) {
-      setErrorMsg(error.response?.data?.detail || t('auth.login.error'));
+      const detail = error.response?.data?.detail;
+      const msg = Array.isArray(detail) ? detail.map((d: any) => d.msg).join(', ') : detail;
+      setErrorMsg(msg || t('auth.login.error'));
     } finally {
       setLoading(false);
     }
@@ -45,7 +45,9 @@ const LoginPage: React.FC = () => {
       notifyLogin();
       navigate('/');
     } catch (error: any) {
-      setErrorMsg(error.response?.data?.detail || t('auth.login.error'));
+      const detail = error.response?.data?.detail;
+      const msg = Array.isArray(detail) ? detail.map((d: any) => d.msg).join(', ') : detail;
+      setErrorMsg(msg || t('auth.login.error'));
     }
   };
 
@@ -57,7 +59,9 @@ const LoginPage: React.FC = () => {
         notifyLogin();
         navigate('/');
       } catch (error: any) {
-        setErrorMsg(error.response?.data?.detail || t('auth.login.error'));
+        const detail = error.response?.data?.detail;
+        const msg = Array.isArray(detail) ? detail.map((d: any) => d.msg).join(', ') : detail;
+        setErrorMsg(msg || t('auth.login.error'));
       }
     }
   };
@@ -120,13 +124,11 @@ const LoginPage: React.FC = () => {
 
           <FacebookLogin
             appId={import.meta.env.VITE_FACEBOOK_CLIENT_ID || ''}
-            callback={handleFacebookSuccess}
-            fields="name,email,picture"
-            render={(renderProps: any) => (
+            onSuccess={handleFacebookSuccess}
+            render={({ onClick }: { onClick?: () => void }) => (
               <button
                 type="button"
-                onClick={renderProps.onClick}
-                disabled={renderProps.isDisabled}
+                onClick={onClick}
                 className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors h-10"
               >
                 <img className="h-5 w-5 mr-2" src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" alt="Facebook logo" />

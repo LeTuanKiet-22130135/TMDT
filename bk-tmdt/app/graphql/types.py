@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import strawberry
 
-from app.models import Category, Product, Store, User, Order, Report, Review, Comment
+from app.models import Category, Product, Store, User, Order, Report, Review, Comment, Wallet, WalletTransaction
 
 
 @strawberry.type
@@ -71,6 +71,63 @@ class CategoryType:
     id: str
     name: str
     description: str | None
+
+
+@strawberry.type
+class WalletTransactionType:
+    id: str
+    wallet_id: str
+    transaction_type: str
+    amount: float
+    balance_before: float
+    balance_after: float
+    status: str
+    reference_id: str | None
+    created_at: datetime
+
+
+@strawberry.type
+class WalletType:
+    id: str
+    user_id: str
+    balance: float
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    transactions: list[WalletTransactionType]
+
+
+@strawberry.type
+class AdminWalletTransactionType:
+    id: str
+    wallet_id: str
+    transaction_type: str
+    amount: float
+    balance_before: float
+    balance_after: float
+    status: str
+    reference_id: str | None
+    created_at: datetime
+    user_email: str | None
+    user_id: str | None
+
+
+@strawberry.type
+class AdminWalletTransactionConnection:
+    items: list[AdminWalletTransactionType]
+    total_items: int
+    total_pages: int
+
+
+@strawberry.type
+class AdminWalletStatsType:
+    total_topup: float
+    total_payment: float
+    total_refund: float
+    total_withdrawal: float
+    total_inflow: float
+    total_outflow: float
+    total_turnover: float
 
 
 @strawberry.type
@@ -363,4 +420,46 @@ def to_comment_type(comment: Comment) -> CommentType:
 
 
 def _as_float(value: Decimal | float | int) -> float:
-    return float(value)
+    return float(value)
+
+
+def to_wallet_transaction_type(txn: WalletTransaction) -> WalletTransactionType:
+    return WalletTransactionType(
+        id=str(txn.id),
+        wallet_id=str(txn.wallet_id),
+        transaction_type=txn.transaction_type.value,
+        amount=_as_float(txn.amount),
+        balance_before=_as_float(txn.balance_before),
+        balance_after=_as_float(txn.balance_after),
+        status=txn.status.value,
+        reference_id=txn.reference_id,
+        created_at=txn.created_at,
+    )
+
+
+def to_admin_wallet_transaction_type(txn: WalletTransaction, user_email: str | None = None, user_id: str | None = None) -> AdminWalletTransactionType:
+    return AdminWalletTransactionType(
+        id=str(txn.id),
+        wallet_id=str(txn.wallet_id),
+        transaction_type=txn.transaction_type.value,
+        amount=_as_float(txn.amount),
+        balance_before=_as_float(txn.balance_before),
+        balance_after=_as_float(txn.balance_after),
+        status=txn.status.value,
+        reference_id=txn.reference_id,
+        created_at=txn.created_at,
+        user_email=user_email,
+        user_id=user_id,
+    )
+
+
+def to_wallet_type(wallet: Wallet) -> WalletType:
+    return WalletType(
+        id=str(wallet.id),
+        user_id=str(wallet.user_id),
+        balance=_as_float(wallet.balance),
+        status=wallet.status.value,
+        created_at=wallet.created_at,
+        updated_at=wallet.updated_at,
+        transactions=[to_wallet_transaction_type(t) for t in wallet.transactions] if wallet.transactions else []
+    )

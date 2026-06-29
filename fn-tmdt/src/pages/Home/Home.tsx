@@ -30,8 +30,9 @@ export const Home: React.FC = () => {
   const { t } = useTranslation();
   const { activeFilters, clearFilters, aiResults, aiPrompt, aiStep, aiSearchLoading, clearAISearch } = useSearchFilters();
   const { profile } = useUserProfile();
-  const { products: allProducts, loading: allLoading, hasMore: allHasMore, reachedMax: allReachedMax, loadMore: allLoadMore, refresh: allRefresh } = useHomeProducts();
   const { products: filteredProducts, loading: filterLoading, isActive } = useFilteredProducts(activeFilters);
+  const skipGeneralFeed = !!profile.id || !!aiResults || isActive;
+  const { products: allProducts, loading: allLoading, hasMore: allHasMore, reachedMax: allReachedMax, loadMore: allLoadMore, refresh: allRefresh } = useHomeProducts(skipGeneralFeed);
   const { products: personalizedProducts, loading: personalizedLoading, hasMore: pHasMore, reachedMax: pReachedMax, loadMore: pLoadMore, refresh: pRefresh } = usePersonalizedFeed(profile.id || null);
   const isAISearch = !!aiResults;
   const isPersonalized = !!profile.id && !isActive && !isAISearch;
