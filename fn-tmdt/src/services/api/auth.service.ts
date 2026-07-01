@@ -21,4 +21,19 @@ export const AuthService = {
     const response = await apiClient.post<TokenResponse>('/auth/facebook', { token });
     return response.data;
   },
+
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>('/auth/forgot-password', { email });
+    return response.data;
+  },
+
+  async verifyResetOtp(email: string, otp: string): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>('/auth/verify-reset-otp', { email, otp });
+    return response.data;
+  },
+
+  async resetPassword(email: string, otp: string, new_password: string): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>('/auth/reset-password', { email, otp, new_password });
+    return response.data;
+  },
 };

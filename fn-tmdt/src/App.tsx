@@ -13,6 +13,9 @@ import CreateProductPage from "./pages/CreateProduct/CreateProductPage"
 import LoginPage from "./pages/Auth/LoginPage"
 import RegisterPage from "./pages/Auth/RegisterPage"
 import VerificationPage from "./pages/Auth/VerificationPage"
+import ForgotPasswordPage from "./pages/Auth/ForgotPasswordPage"
+import VerifyResetOtpPage from "./pages/Auth/VerifyResetOtpPage"
+import ResetPasswordPage from "./pages/Auth/ResetPasswordPage"
 import AuthorPage from "./pages/Author/AuthorPage"
 import ProfileEditPage from "./pages/Profile/ProfileEditPage"
 import CheckoutPage from "./pages/Checkout/CheckoutPage"
@@ -84,6 +87,9 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify" element={<VerificationPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/verify-reset-otp" element={<VerifyResetOtpPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/author/:shortlink" element={<AuthorPage />} />
           <Route path="/profile" element={<ProfileEditPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
