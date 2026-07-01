@@ -4,7 +4,7 @@ import strawberry
 from sqlalchemy import select, func, Date, cast, String
 from typing import List
 
-from app.models import Order, Store, OrderStatusEnum
+from app.models import Order, Store, OrderStatusEnum, OrderItem, Product, Category
 
 def _db(info: strawberry.types.Info):
     return info.context["db"]
@@ -20,10 +20,17 @@ class RevenueDataPoint:
 
 
 @strawberry.type
+class CategoryRevenueDataPoint:
+    category_name: str
+    revenue: float
+
+
+@strawberry.type
 class RevenueStats:
     total_revenue: float
     total_orders: int
     chart_data: List[RevenueDataPoint]
+    revenue_by_category: List[CategoryRevenueDataPoint]
 
 
 @strawberry.type
@@ -108,8 +115,32 @@ class AnalyticsQuery:
                 m = (now.replace(day=1) - timedelta(days=30 * (11 - i))).strftime('%Y-%m')
                 chart_data.append(RevenueDataPoint(date=m, revenue=chart_data_map.get(m, 0.0)))
 
+        # Group by category for pie chart
+        stmt_category = (
+            select(
+                Category.name.label("category_name"),
+                func.sum(OrderItem.unit_price * OrderItem.quantity).label("revenue")
+            )
+            .select_from(Order)
+            .join(OrderItem, OrderItem.order_id == Order.id)
+            .join(Product, Product.id == OrderItem.product_id)
+            .join(Category, Category.id == Product.category_id)
+            .where(
+                Order.store_id == store.id,
+                Order.status.in_([OrderStatusEnum.PAID, OrderStatusEnum.COMPLETED]),
+                Order.created_at >= start_date,
+            )
+            .group_by(Category.name)
+        )
+        cat_rows = db.execute(stmt_category).all()
+        revenue_by_category = [
+            CategoryRevenueDataPoint(category_name=row.category_name, revenue=float(row.revenue))
+            for row in cat_rows if row.revenue is not None and row.revenue > 0
+        ]
+
         return RevenueStats(
             total_revenue=total_revenue,
             total_orders=total_orders,
-            chart_data=chart_data
+            chart_data=chart_data,
+            revenue_by_category=revenue_by_category
         )

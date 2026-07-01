@@ -10,6 +10,10 @@ import {
   ResponsiveContainer,
   Area,
   AreaChart,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
 } from 'recharts';
 import { useUserProfile } from '../../contexts/UserProfileContext';
 import { Header } from '../../components/layout/Header';
@@ -136,6 +140,53 @@ export const RevenuePage: React.FC = () => {
                     activeDot={{ r: 6, fill: '#DB2E50', stroke: '#fff', strokeWidth: 2 }}
                   />
                 </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mt-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Doanh Thu Theo Danh Mục</h2>
+          </div>
+          
+          {loading ? (
+            <div className="h-80 flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-[#FFC9D2] border-t-[#F65C88] rounded-full animate-spin"></div>
+            </div>
+          ) : error ? (
+            <div className="h-80 flex items-center justify-center text-red-500">
+              Không thể tải dữ liệu biểu đồ
+            </div>
+          ) : !stats?.revenueByCategory || stats.revenueByCategory.length === 0 ? (
+            <div className="h-80 flex items-center justify-center text-gray-500">
+              Chưa có dữ liệu doanh thu
+            </div>
+          ) : (
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={stats.revenueByCategory}
+                    dataKey="revenue"
+                    nameKey="categoryName"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    label={({ categoryName, percent }) => `${categoryName} (${(percent * 100).toFixed(0)}%)`}
+                    labelLine={true}
+                  >
+                    {stats.revenueByCategory.map((entry: any, index: number) => {
+                      const COLORS = ['#DB2E50', '#F65C88', '#FF9FB1', '#FFC9D2', '#040316', '#4B5563', '#9CA3AF'];
+                      return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
+                    })}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: any) => [formatCurrency(Number(value) || 0), 'Doanh thu']}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
               </ResponsiveContainer>
             </div>
           )}

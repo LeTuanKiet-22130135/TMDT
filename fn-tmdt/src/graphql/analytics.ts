@@ -9,6 +9,10 @@ export const SELLER_REVENUE_STATS_QUERY = gql`
         date
         revenue
       }
+      revenueByCategory {
+        categoryName
+        revenue
+      }
     }
   }
 `;
