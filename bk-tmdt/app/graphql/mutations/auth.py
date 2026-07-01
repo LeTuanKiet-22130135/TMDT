@@ -97,23 +97,50 @@ class AuthMutation:
         background_tasks = _background_tasks(info)
         user = db.scalar(select(User).where(User.email == email))
         if user is not None:
-            token = create_password_reset_token(str(user.id))
+            otp = f"{random.randint(100000, 999999)}"
+            user.verification_otp = otp
+            user.verification_otp_expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+            db.commit()
             if not settings.test_mode:
-                background_tasks.add_task(_queue_reset_email, user.email, user.full_name, token)
+                background_tasks.add_task(_queue_reset_email, user.email, user.full_name, otp)
         return True
 
     @strawberry.mutation
-    def resetPassword(self, info: Info, token: str, new_password: str) -> bool:
+    def verifyResetOtp(self, info: Info, email: str, otp: str) -> bool:
         db = _db(info)
-        try:
-            user_id = get_token_subject(token, expected_type="reset_password")
-        except Exception:
-            raise Exception("Token không hợp lệ hoặc đã hết hạn")
-        
-        user = db.scalar(select(User).where(User.id == user_id))
+        user = db.scalar(select(User).where(User.email == email))
         if not user:
             raise Exception("Không tìm thấy người dùng")
             
+        if settings.test_mode and otp == "676767":
+            return True
+
+        if not user.verification_otp or user.verification_otp != otp:
+            raise Exception("Mã OTP không đúng")
+            
+        if user.verification_otp_expires_at and user.verification_otp_expires_at < datetime.now(timezone.utc):
+            raise Exception("Mã OTP đã hết hạn")
+            
+        return True
+
+    @strawberry.mutation
+    def resetPassword(self, info: Info, email: str, otp: str, new_password: str) -> bool:
+        db = _db(info)
+        user = db.scalar(select(User).where(User.email == email))
+        if not user:
+            raise Exception("Không tìm thấy người dùng")
+            
+        if settings.test_mode and otp == "676767":
+            pass
+        else:
+            if not user.verification_otp or user.verification_otp != otp:
+                raise Exception("Mã OTP không đúng")
+                
+            if user.verification_otp_expires_at and user.verification_otp_expires_at < datetime.now(timezone.utc):
+                raise Exception("Mã OTP đã hết hạn")
+            
         user.password_hash = hash_password(new_password)
+        user.verification_otp = None
+        user.verification_otp_expires_at = None
         db.commit()
         return True

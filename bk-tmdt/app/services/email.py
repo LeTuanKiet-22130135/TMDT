@@ -60,9 +60,8 @@ def send_otp_email(to_email: str, name: str, otp: str) -> None:
     """
     send_email(to_email, subject, html_body)
 
-def send_password_reset_email(to_email: str, name: str, token: str) -> None:
+def send_password_reset_email(to_email: str, name: str, otp: str) -> None:
     subject = "Lấy lại mật khẩu"
-    reset_link = f"http://localhost:5173/reset-password?token={token}"
     html_body = f"""
     <!DOCTYPE html>
     <html>
@@ -72,8 +71,8 @@ def send_password_reset_email(to_email: str, name: str, token: str) -> None:
             .container {{ max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; color: #333; }}
             .header {{ background-color: #fbfbfe; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
             .content {{ padding: 30px; background-color: #ffffff; border: 1px solid #eaeaea; border-top: none; border-radius: 0 0 8px 8px; }}
+            .otp-box {{ background-color: #fff0f3; border: 1px dashed #f65c88; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #db2e50; margin: 20px 0; border-radius: 8px; }}
             .footer {{ margin-top: 20px; text-align: center; font-size: 12px; color: #888; }}
-            .btn {{ display: inline-block; padding: 12px 24px; background-color: #db2e50; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: bold; margin-top: 20px; }}
         </style>
     </head>
     <body>
@@ -83,10 +82,8 @@ def send_password_reset_email(to_email: str, name: str, token: str) -> None:
             </div>
             <div class="content">
                 <p>Xin chào <strong>{name}</strong>,</p>
-                <p>Bạn đã yêu cầu lấy lại mật khẩu. Vui lòng click vào nút bên dưới để đổi mật khẩu. Link này có hiệu lực trong vòng 30 phút.</p>
-                <div style="text-align: center;">
-                    <a href="{reset_link}" class="btn">Đổi Mật Khẩu</a>
-                </div>
+                <p>Bạn đã yêu cầu lấy lại mật khẩu. Vui lòng sử dụng mã xác thực (OTP) dưới đây để đổi mật khẩu. Mã này có hiệu lực trong vòng 15 phút.</p>
+                <div class="otp-box">{otp}</div>
                 <p>Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>
             </div>
             <div class="footer">

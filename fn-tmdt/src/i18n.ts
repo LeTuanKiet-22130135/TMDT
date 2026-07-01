@@ -39,6 +39,33 @@ const resources = {
           lengthError: "Mã OTP phải có 6 chữ số",
           error: "Xác thực thất bại. Vui lòng thử lại."
         },
+        forgotPassword: {
+          title: "Quên Mật Khẩu",
+          instruction: "Nhập địa chỉ email của bạn và chúng tôi sẽ gửi cho bạn hướng dẫn để lấy lại mật khẩu.",
+          emailPlaceholder: "Địa chỉ Email",
+          submit: "Gửi Yêu Cầu",
+          success: "Nếu email tồn tại trong hệ thống, chúng tôi đã gửi hướng dẫn lấy lại mật khẩu.",
+          error: "Đã có lỗi xảy ra. Vui lòng thử lại.",
+          backToLogin: "Quay lại trang Đăng Nhập"
+        },
+        verifyResetOtp: {
+          title: "Xác Nhận OTP",
+          instruction: "Vui lòng nhập mã OTP 6 số đã được gửi đến email của bạn.",
+          otpPlaceholder: "Nhập mã OTP",
+          submit: "Tiếp Tục",
+          error: "Vui lòng nhập mã OTP gồm 6 chữ số."
+        },
+        resetPassword: {
+          title: "Đặt Lại Mật Khẩu",
+          instruction: "Vui lòng nhập mật khẩu mới của bạn.",
+          passwordPlaceholder: "Mật khẩu mới",
+          confirmPlaceholder: "Xác nhận mật khẩu",
+          submit: "Xác Nhận Đổi Mật Khẩu",
+          success: "Đổi mật khẩu thành công. Đang chuyển hướng...",
+          error: "Đã có lỗi xảy ra. Vui lòng thử lại.",
+          matchError: "Mật khẩu không khớp.",
+          invalidToken: "Đường dẫn không hợp lệ hoặc đã hết hạn."
+        },
         layout: {
           brandPrefix: "Lumine",
           brandSuffix: "",
